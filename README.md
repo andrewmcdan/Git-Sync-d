@@ -15,7 +15,7 @@ If Git-Sync'd is monitoring a file that is part of an exiting repo, whenever tha
 ## Program Structure
 ### Service that runs all the time
 There will need to be versions built for Windows and Linux. Mac support may come later depending on availability of test platform. the service is the main part of the program that handles the monitoring and uploading/downloading of files. 
-### Command Line Interface
+### [Command Line Interface](https://github.com/andrewmcdan/Git-Sync-d-CLI)
 This will be built along side the Service. Initially, it will be the main UI. It will allow the user to add files and manage the repos associated with the service.
 ### GUI
 Gonna take some inspiration from the Google Drive desktop app GUI. Taskbar icon and what-not. This GUI will be built later on. One thing the GUI needs is a quick an easy way to get the individual files that are sync'd and push/pull changes.
