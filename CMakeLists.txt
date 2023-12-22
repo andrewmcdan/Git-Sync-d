@@ -18,7 +18,7 @@ file(GLOB SOURCES "src/*.cpp" "src/common/*.cpp")
 if(WIN32)
   list(APPEND SOURCES "src/windows/service.cpp")
 elseif(UNIX AND NOT APPLE)
-  list(APPEND SOURCES "src/linux/service.cpp")
+  list(APPEND SOURCES "src/linux/daemon.cpp")
 endif()
 
 add_executable(Git-Sync-d main.cpp ${SOURCES})

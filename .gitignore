@@ -1,5 +1,8 @@
 *boost
+*include
 CMakeFiles
 CMakeCache.txt
 build
 x64
+settings.json
+build_linux
