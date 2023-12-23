@@ -13,6 +13,7 @@ const TCHAR *serviceDescription = _T("Git Sync'd to a remote repository.");
 // Service status structure
 SERVICE_STATUS g_ServiceStatus = {};
 SERVICE_STATUS_HANDLE g_StatusHandle = nullptr;
+HANDLE gh_StopEvent = nullptr;
 
 bool IsServiceInstalled()
 {
@@ -45,7 +46,7 @@ void InstallService(const TCHAR *exePath)
 
     SC_HANDLE serviceHandle = CreateServiceA(
         scmHandle, serviceName, serviceDisplayName,
-        SERVICE_START | SERVICE_STOP | SERVICE_CONFIG_DESCRIPTION | DELETE | SERVICE_QUERY_STATUS | SERVICE_QUERY_CONFIG | SERVICE_PAUSE_CONTINUE,
+        SERVICE_START | SERVICE_STOP | DELETE | SERVICE_QUERY_STATUS | SERVICE_QUERY_CONFIG | SERVICE_PAUSE_CONTINUE,
         SERVICE_WIN32_OWN_PROCESS,
         SERVICE_DEMAND_START, SERVICE_ERROR_NORMAL,
         exePath, nullptr, nullptr, nullptr, nullptr, nullptr);
@@ -70,6 +71,7 @@ void WINAPI ServiceMain(DWORD argc, LPTSTR *argv)
     if (g_StatusHandle == nullptr)
     {
         // Handle error
+
         return;
     }
 
@@ -87,11 +89,15 @@ void WINAPI ServiceMain(DWORD argc, LPTSTR *argv)
         g_ServiceStatus.dwCheckPoint++;
         SetServiceStatus(g_StatusHandle, &g_ServiceStatus);
 
-
-
         // For demo purposes, we'll just sleep
         Sleep(3000); // Sleep for 3 seconds
     }
+    gh_StopEvent = CreateEvent(nullptr, TRUE, FALSE, nullptr);
+    if (gh_StopEvent == NULL)
+    {
+        return;
+    }
+    // Signal the service to stop
     g_ServiceStatus.dwCurrentState = SERVICE_STOPPED;
     SetServiceStatus(g_StatusHandle, &g_ServiceStatus);
 }
@@ -105,6 +111,8 @@ VOID WINAPI ServiceCtrlHandler(DWORD fdwControl)
     case SERVICE_CONTROL_STOP:
         g_ServiceStatus.dwCurrentState = SERVICE_STOPPED;
         SetServiceStatus(g_StatusHandle, &g_ServiceStatus);
+        break;
+    case SERVICE_CONTROL_INTERROGATE:
         break;
     default:
         break;

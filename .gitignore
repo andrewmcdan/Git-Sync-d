@@ -6,3 +6,5 @@ build
 x64
 settings.json
 build_linux
+app
+dockerfile
