@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
             args.push_back(argv[i]);
         }
     }
-    std::string message = "Hello, w orld!";
+    std::string message = "Hello, world!";
     std::cout << message << std::endl;
 
     int install = 0;
