@@ -6,9 +6,9 @@
 #include <string>
 
 // Define service name
-const TCHAR *serviceName = _T("GitSyncdService");
-const TCHAR *serviceDisplayName = _T("Git Sync'd Service");
-const TCHAR *serviceDescription = _T("Git Sync'd to a remote repository.");
+const TCHAR* serviceName = _T("GitSyncdService");
+const TCHAR* serviceDisplayName = _T("Git Sync'd Service");
+const TCHAR* serviceDescription = _T("Git Sync'd to a remote repository.");
 
 // Service status structure
 SERVICE_STATUS g_ServiceStatus = {};
@@ -35,7 +35,7 @@ bool IsServiceInstalled()
     return false;
 }
 
-void InstallService(const TCHAR *exePath)
+void InstallService(const TCHAR* exePath)
 {
     SC_HANDLE scmHandle = OpenSCManager(nullptr, nullptr, SC_MANAGER_CREATE_SERVICE);
     if (!scmHandle)
@@ -45,11 +45,11 @@ void InstallService(const TCHAR *exePath)
     }
 
     SC_HANDLE serviceHandle = CreateServiceA(
-        scmHandle, serviceName, serviceDisplayName,
+        scmHandle, (LPCSTR) serviceName, (LPCSTR) serviceDisplayName,
         SERVICE_START | SERVICE_STOP | DELETE | SERVICE_QUERY_STATUS | SERVICE_QUERY_CONFIG | SERVICE_PAUSE_CONTINUE,
         SERVICE_WIN32_OWN_PROCESS,
         SERVICE_DEMAND_START, SERVICE_ERROR_NORMAL,
-        exePath, nullptr, nullptr, nullptr, nullptr, nullptr);
+        (LPCSTR) exePath, nullptr, nullptr, nullptr, nullptr, nullptr);
 
     if (!serviceHandle)
     {
@@ -64,7 +64,7 @@ void InstallService(const TCHAR *exePath)
     CloseServiceHandle(scmHandle);
 }
 
-void WINAPI ServiceMain(DWORD argc, LPTSTR *argv)
+void WINAPI ServiceMain(DWORD argc, LPTSTR* argv)
 {
     // Register the handler function for the service
     g_StatusHandle = RegisterServiceCtrlHandler(serviceName, ServiceCtrlHandler);
@@ -83,7 +83,11 @@ void WINAPI ServiceMain(DWORD argc, LPTSTR *argv)
     // Service run loop
     while (g_ServiceStatus.dwCurrentState == SERVICE_RUNNING)
     {
-        // Perform main service function here...
+        // set dwControlsAccepted to accept SERVICE_CONTROL_STOP requests
+        g_ServiceStatus.dwControlsAccepted = SERVICE_ACCEPT_STOP;
+        SetServiceStatus(g_StatusHandle, &g_ServiceStatus);
+
+        // TODO: Perform main service function here...
 
         // let windows know we've started
         g_ServiceStatus.dwCheckPoint++;
@@ -109,6 +113,12 @@ VOID WINAPI ServiceCtrlHandler(DWORD fdwControl)
     {
     case SERVICE_CONTROL_SHUTDOWN:
     case SERVICE_CONTROL_STOP:
+        // Signal that the service is stopping
+        g_ServiceStatus.dwCurrentState = SERVICE_STOP_PENDING;
+        SetServiceStatus(g_StatusHandle, &g_ServiceStatus);
+        // TODO: Perform tasks necessary to stop the service here...
+
+        // Signal the service to stop
         g_ServiceStatus.dwCurrentState = SERVICE_STOPPED;
         SetServiceStatus(g_StatusHandle, &g_ServiceStatus);
         break;
@@ -151,7 +161,7 @@ bool DeleteService()
     return true;
 }
 
-bool SetServiceDescription(const TCHAR *serviceName, const TCHAR *serviceDescription)
+bool SetServiceDescription(const TCHAR* serviceName, const TCHAR* serviceDescription)
 {
     SC_HANDLE scmHandle = OpenSCManager(nullptr, nullptr, SC_MANAGER_CONNECT);
     if (!scmHandle)
@@ -169,7 +179,7 @@ bool SetServiceDescription(const TCHAR *serviceName, const TCHAR *serviceDescrip
     }
 
     SERVICE_DESCRIPTION description;
-    description.lpDescription = (LPTSTR)serviceDescription;
+    description.lpDescription = (LPTSTR) serviceDescription;
 
     if (!ChangeServiceConfig2(serviceHandle, SERVICE_CONFIG_DESCRIPTION, &description))
     {
@@ -232,8 +242,7 @@ void StartWindowsService(int install)
                 DeleteService();
                 std::cout << "Service is uninstalled." << std::endl;
             }
-        }
-        else
+        } else
         {
             std::cout << "Service is not installed." << std::endl;
         }
@@ -251,12 +260,11 @@ void StartWindowsService(int install)
         SetServiceDescription(serviceName, serviceDescription);
         // start the service
         StartService();
-    }
-    else
+    } else
     {
         SERVICE_TABLE_ENTRY ServiceTable[] = {
-            {(LPSTR)serviceName, (LPSERVICE_MAIN_FUNCTION)ServiceMain},
-            {nullptr, nullptr}};
+            {(LPSTR) serviceName, (LPSERVICE_MAIN_FUNCTION) ServiceMain},
+            {nullptr, nullptr} };
         if (StartServiceCtrlDispatcher(ServiceTable) == FALSE)
         {
             std::cerr << "Error: Could not start the service." << std::endl;

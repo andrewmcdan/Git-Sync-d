@@ -4,6 +4,11 @@ project(Git-Sync-d)
 # Platform-specific settings
 if(WIN32)
   add_definitions(-DWINDOWS)
+  if(MSVC)
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
+  endif()
+
 elseif(UNIX AND NOT APPLE)
   add_definitions(-DLINUX)
 endif()
