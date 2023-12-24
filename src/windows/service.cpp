@@ -98,7 +98,7 @@ void WINAPI ServiceMain(DWORD argc, LPTSTR* argv)
     }
     gh_StopEvent = CreateEvent(nullptr, TRUE, FALSE, nullptr);
     if (gh_StopEvent == NULL)
-    {..
+    {
         return;
     }
     // Signal the service to stop
