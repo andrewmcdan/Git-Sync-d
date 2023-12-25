@@ -2,6 +2,7 @@
 #ifndef IPC_H
 #define IPC_H
 #include <boost/interprocess/managed_shared_memory.hpp>
+#include <boost/interprocess/file_mapping.hpp>
 #include <iostream>
 #include <cstddef>
 #include <cstdlib>
@@ -11,6 +12,12 @@
 #include <cassert>
 #include <utility>
 #include <thread>
+#include <fstream>
+#include <filesystem>
+#ifdef _WIN32
+#include <windows.h>
+#include <shlobj_core.h>
+#endif
 
 using namespace boost::interprocess;
 class IPC{
