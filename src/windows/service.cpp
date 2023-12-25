@@ -4,6 +4,7 @@
 #include <tchar.h>
 #include <iostream>
 #include <string>
+#include "../common/mainLogic.h"
 
 // Define service name
 const TCHAR* serviceName = _T("GitSyncdService");
@@ -66,12 +67,14 @@ void InstallService(const TCHAR* exePath)
 
 void WINAPI ServiceMain(DWORD argc, LPTSTR* argv)
 {
+    LARGE_INTEGER StartingTime, EndingTime, ElapsedMicroseconds;
+    LARGE_INTEGER Frequency;
     // Register the handler function for the service
     g_StatusHandle = RegisterServiceCtrlHandler(serviceName, ServiceCtrlHandler);
     if (g_StatusHandle == nullptr)
     {
         // Handle error
-
+        std::cerr << "RegisterServiceCtrlHandler failed: " << GetLastError() << std::endl;
         return;
     }
 
@@ -86,15 +89,26 @@ void WINAPI ServiceMain(DWORD argc, LPTSTR* argv)
         // set dwControlsAccepted to accept SERVICE_CONTROL_STOP requests
         g_ServiceStatus.dwControlsAccepted = SERVICE_ACCEPT_STOP;
         SetServiceStatus(g_StatusHandle, &g_ServiceStatus);
-
-        // TODO: Perform main service function here...
-
         // let windows know we've started
         g_ServiceStatus.dwCheckPoint++;
         SetServiceStatus(g_StatusHandle, &g_ServiceStatus);
-
-        // For demo purposes, we'll just sleep
-        Sleep(3000); // Sleep for 3 seconds
+        // Perform main service function here..
+        // get high precision time
+        QueryPerformanceCounter(&StartingTime);
+        QueryPerformanceCounter(&Frequency);
+        MainLogic_H::loop(); // this is the main service loop.
+        QueryPerformanceCounter(&EndingTime);
+        // calculate the time it took to run the loop
+        ElapsedMicroseconds.QuadPart = EndingTime.QuadPart - StartingTime.QuadPart;
+        ElapsedMicroseconds.QuadPart *= 1000000;
+        ElapsedMicroseconds.QuadPart /= Frequency.QuadPart;
+        // convert to milliseconds
+        ElapsedMicroseconds.QuadPart /= 1000;
+        // sleep for 100ms minus the time it took to run the loop, but only if it took less than 100ms to run the loop
+        // This will ensure that we don't take up too much CPU time unless we need to.
+        if(ElapsedMicroseconds.QuadPart < 100){
+            Sleep((LONGLONG)100 - ElapsedMicroseconds.QuadPart);
+        }
     }
     gh_StopEvent = CreateEvent(nullptr, TRUE, FALSE, nullptr);
     if (gh_StopEvent == NULL)
@@ -117,7 +131,10 @@ VOID WINAPI ServiceCtrlHandler(DWORD fdwControl)
         g_ServiceStatus.dwCurrentState = SERVICE_STOP_PENDING;
         SetServiceStatus(g_StatusHandle, &g_ServiceStatus);
         // TODO: Perform tasks necessary to stop the service here...
-
+        MainLogic_H::stop();
+        while(!MainLogic_H::IsServiceStopped()){
+            Sleep(100);
+        }
         // Signal the service to stop
         g_ServiceStatus.dwCurrentState = SERVICE_STOPPED;
         SetServiceStatus(g_StatusHandle, &g_ServiceStatus);
@@ -154,8 +171,6 @@ bool DeleteService()
         return false;
     }
 
-    std::cout << "Service deleted successfully." << std::endl;
-
     CloseServiceHandle(serviceHandle);
     CloseServiceHandle(scmHandle);
     return true;
@@ -189,8 +204,6 @@ bool SetServiceDescription(const TCHAR* serviceName, const TCHAR* serviceDescrip
         return false;
     }
 
-    std::cout << "Service description set successfully." << std::endl;
-
     CloseServiceHandle(serviceHandle);
     CloseServiceHandle(scmHandle);
     return true;
@@ -221,22 +234,51 @@ bool StartService()
         return false;
     }
 
-    std::cout << "Service started successfully." << std::endl;
+    CloseServiceHandle(serviceHandle);
+    CloseServiceHandle(scmHandle);
+    return true;
+}
+
+bool StopService()
+{
+    SC_HANDLE scmHandle = OpenSCManager(nullptr, nullptr, SC_MANAGER_CONNECT);
+    if (!scmHandle)
+    {
+        std::cerr << "OpenSCManager failed: " << GetLastError() << std::endl;
+        return false;
+    }
+
+    SC_HANDLE serviceHandle = OpenService(scmHandle, serviceName, SERVICE_STOP);
+    if (!serviceHandle)
+    {
+        std::cerr << "OpenService failed: " << GetLastError() << std::endl;
+        CloseServiceHandle(scmHandle);
+        return false;
+    }
+
+    SERVICE_STATUS status;
+    if (!ControlService(serviceHandle, SERVICE_CONTROL_STOP, &status))
+    {
+        std::cerr << "ControlService failed: " << GetLastError() << std::endl;
+        CloseServiceHandle(serviceHandle);
+        CloseServiceHandle(scmHandle);
+        return false;
+    }
 
     CloseServiceHandle(serviceHandle);
     CloseServiceHandle(scmHandle);
     return true;
 }
 
-void StartWindowsService(int install)
+void StartWindowsService(int startCode)
 {
-    if (install > 0)
+    if (startCode == 1 || startCode == 2)
     {
         std::cout << "Installing service..." << std::endl;
         if (IsServiceInstalled())
         {
             std::cout << "Service is already installed." << std::endl;
-            if (install == 2)
+            if (startCode == 2)
             {
                 std::cout << "Reinstalling service..." << std::endl;
                 DeleteService();
@@ -260,7 +302,31 @@ void StartWindowsService(int install)
         SetServiceDescription(serviceName, serviceDescription);
         // start the service
         StartService();
-    } else
+    } else if (startCode == 3){
+        if(IsServiceInstalled()){
+            std::cout << "Service is installed." << std::endl;
+            std::cout << "Attempting to start service..." << std::endl;
+            if(StartService()){
+                std::cout << "Service started successfully." << std::endl;
+            }else{
+                std::cout << "Service failed to start." << std::endl;
+            }
+        }else{
+            std::cout << "Service is not installed. Use \"--install\" to install service." << std::endl;
+        }
+    }else if (startCode == 4){
+        if(IsServiceInstalled()){
+            std::cout << "Service is installed." << std::endl;
+            std::cout << "Attempting to stop service..." << std::endl;
+            if(StopService()){
+                std::cout << "Service stopped successfully." << std::endl;
+            }else{
+                std::cout << "Service failed to stop." << std::endl;
+            }
+        }else{
+            std::cout << "Service is not installed. Use \"--install\" to install service." << std::endl;
+        }
+    }else
     {
         SERVICE_TABLE_ENTRY ServiceTable[] = {
             {(LPSTR) serviceName, (LPSERVICE_MAIN_FUNCTION) ServiceMain},

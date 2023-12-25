@@ -21,25 +21,32 @@ int main(int argc, char** argv) {
             args.push_back(argv[i]);
         }
     }
-    std::string message = "Hello, world!";
-    std::cout << message << std::endl;
+    
+    std::cout << "Git Sync'd Service / Daemon" << std::endl;
+    std::cout << "Usage: " << argv[0] << " [--install] [--reinstall] [--start] [--stop]" << std::endl;
 
-    int install = 0;
+    int startCode = 0;
     if (args.size() > 1) {
         for (auto arg : args) {
             if (arg == "--install") {
-                install = 1;
+                startCode = 1;
             }
             if (arg == "--reinstall") {
-                install = 2;
+                startCode = 2;
+            }
+            if (arg == "--start") {
+                startCode = 3;
+            }
+            if (arg == "--stop") {
+                startCode = 4;
             }
         }
     }
 #ifdef _WIN32
-    StartWindowsService(install);
+    StartWindowsService(startCode);
 
 #elif __linux__
-    StartLinuxDaemon(install);
+    StartLinuxDaemon(startCode);
 
 #else
     std::cerr << "Unsupported platform!" << std::endl;
