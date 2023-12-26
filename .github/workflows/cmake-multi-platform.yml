@@ -49,7 +49,7 @@ jobs:
           - os: macos-latest
             c_compiler: gcc
             cpp_compiler: g++
-            boost_install_dir: /home/runner/
+            boost_install_dir: /Users/runner/
             boost_version: 1.83.0
             boost_platform_version: 11.0
             boost_toolset: clang

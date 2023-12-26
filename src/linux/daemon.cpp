@@ -13,8 +13,6 @@ void StartLinuxDaemon() {
     // Daemon-specific initialization and loop here...
 }
 
-
-
 bool IsRoot() {
     return geteuid() == 0;
 }
