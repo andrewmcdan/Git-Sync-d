@@ -28,15 +28,35 @@ jobs:
           - os: windows-latest
             c_compiler: cl
             cpp_compiler: cl
+            boost_install_dir: C:\Users\Andrew\Documents\Projects\boost_1_84_0
+            boost_version: 1.83.0
+            boost_platform_version: 2022
+            boost_toolset: msvc
+            boost_arch: x64
           - os: ubuntu-latest
             c_compiler: gcc
             cpp_compiler: g++
+            boost_install_dir: /home/runner/boost
+            boost_version: 1.83.0
+            boost_platform_version: 22.04
+            boost_toolset: gcc
+            boost_arch: x64
           - os: ubuntu-latest
             c_compiler: clang
             cpp_compiler: clang++
+            boost_install_dir: /home/runner/boost
+            boost_version: 1.83.0
+            boost_platform_version: 22.04
+            boost_toolset: gcc
+            boost_arch: x64
           - os: macos-latest
             c_compiler: gcc
             cpp_compiler: g++
+            boost_install_dir: /home/runner/boost
+            boost_version: 1.83.0
+            boost_platform_version: 11.0
+            boost_toolset: clang
+            boost_arch: x64
         exclude:
           - os: windows-latest
             c_compiler: gcc
@@ -66,13 +86,15 @@ jobs:
           # REQUIRED: Specify the required boost version
           # A list of supported versions can be found here:
           # https://github.com/MarkusJx/prebuilt-boost/blob/main/versions-manifest.json
-          boost_version: 1.83.0
+          boost_version: ${{ matrix.boost_version }}
           # OPTIONAL: Specify a custom install location
-          boost_install_dir: C:\Users\Andrew\Documents\Projects\boost_1_84_0
+          boost_install_dir: ${{ matrix.boost_install_dir }}
           # OPTIONAL: Specify a platform version
-          platform_version: 2022
+          platform_version: ${{matrix.boost_platform_version}}
           # OPTIONAL: Specify a toolset
-          toolset: msvc
+          toolset: ${{matrix.boost_toolset}}
+          # OPTIONAL: Specify an architecture
+          arch: ${{matrix.boost_arch}}
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
