@@ -102,7 +102,7 @@ jobs:
 
     - name: Build
       # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }} --target all -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=${{ steps.strings.outputs.build-output-dir }}/bin
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }} --target all -D CMAKE_RUNTIME_OUTPUT_DIRECTORY=${{ steps.strings.outputs.build-output-dir }}/bin
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v2
