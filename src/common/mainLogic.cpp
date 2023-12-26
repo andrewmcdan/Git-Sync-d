@@ -20,7 +20,7 @@ namespace MainLogic_H
 
 
             // check to see if we have we received a shutdown command
-            if (mainLogic.ipc.shutdown())
+            if (IPC::shutdown())
             {
                 mainLogic.stop();
                 return false; // this will break the service / daemon out of its loop

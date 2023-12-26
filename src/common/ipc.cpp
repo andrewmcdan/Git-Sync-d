@@ -1,5 +1,7 @@
 #include "ipc.h"
 
+bool IPC::shutdown_trigger = false;
+
 IPC::IPC()
 {
     // create a new thread to handle IPC
@@ -28,7 +30,7 @@ bool IPC::pendingCommands()
 
 bool IPC::shutdown()
 {
-    return IPC::shutdown_trigger;
+    return shutdown_trigger;
 }
 
 void run(IPC& _this)
