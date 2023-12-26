@@ -28,7 +28,7 @@ jobs:
           - os: windows-latest
             c_compiler: cl
             cpp_compiler: cl
-            boost_install_dir: C:\Users\Andrew\Documents\Projects\boost_1_84_0
+            boost_install_dir: C:\Users\Andrew\Documents\Projects\
             boost_version: 1.83.0
             boost_platform_version: 2022
             boost_toolset: msvc
@@ -40,7 +40,7 @@ jobs:
             boost_version: 1.83.0
             boost_platform_version: 22.04
             boost_toolset: gcc
-            boost_arch: x64
+            boost_arch: aarch64
           - os: ubuntu-latest
             c_compiler: clang
             cpp_compiler: clang++
@@ -48,7 +48,7 @@ jobs:
             boost_version: 1.83.0
             boost_platform_version: 22.04
             boost_toolset: gcc
-            boost_arch: x64
+            boost_arch: aarch64
           - os: macos-latest
             c_compiler: gcc
             cpp_compiler: g++
@@ -56,7 +56,7 @@ jobs:
             boost_version: 1.83.0
             boost_platform_version: 11.0
             boost_toolset: clang
-            boost_arch: x64
+            boost_arch: aarch64
         exclude:
           - os: windows-latest
             c_compiler: gcc
