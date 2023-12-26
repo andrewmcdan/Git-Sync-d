@@ -4,6 +4,6 @@
 #include <unistd.h>
 #include <sys/types.h>
 
-void StartLinuxDaemon(int install, int argc, char** argv);
+void StartLinuxDaemon(int startCode, int argc, char** argv);
 
 #endif // LINUX_DAEMON_H

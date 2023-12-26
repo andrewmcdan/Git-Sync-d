@@ -8,7 +8,7 @@ void Daemonize() {
     // Daemonization process...
 }
 
-void StartLinuxDaemon() {
+void StartLinuxDaemon(int startCode, int argc, char** argv) {
     Daemonize();
     // Daemon-specific initialization and loop here...
 }
