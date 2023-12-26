@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
             args.push_back(argv[i]);
         }
     }
-    
+
     std::cout << "Git Sync'd Service / Daemon" << std::endl;
     std::cout << "Usage: " << argv[0] << " [--install] [--reinstall] [--start] [--stop]" << std::endl;
 
@@ -43,10 +43,10 @@ int main(int argc, char** argv) {
         }
     }
 #ifdef _WIN32
-    StartWindowsService(startCode);
+    StartWindowsService(startCode, argc, argv);
 
 #elif __linux__
-    StartLinuxDaemon(startCode);
+    StartLinuxDaemon(startCode, argc, argv);
 
 #else
     std::cerr << "Unsupported platform!" << std::endl;

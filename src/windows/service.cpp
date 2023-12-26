@@ -1,10 +1,5 @@
 #ifdef _WIN32
 #include "service.h"
-#include <windows.h>
-#include <tchar.h>
-#include <iostream>
-#include <string>
-#include "../common/mainLogic.h"
 
 // Define service name
 const TCHAR* serviceName = _T("GitSyncdService");
@@ -97,6 +92,9 @@ void WINAPI ServiceMain(DWORD argc, LPTSTR* argv)
         QueryPerformanceCounter(&StartingTime);
         QueryPerformanceCounter(&Frequency);
         MainLogic_H::loop(); // this is the main service loop.
+        if (MainLogic_H::IPC::shutdown()) {
+            break;
+        }
         QueryPerformanceCounter(&EndingTime);
         // calculate the time it took to run the loop
         ElapsedMicroseconds.QuadPart = EndingTime.QuadPart - StartingTime.QuadPart;
@@ -106,8 +104,8 @@ void WINAPI ServiceMain(DWORD argc, LPTSTR* argv)
         ElapsedMicroseconds.QuadPart /= 1000;
         // sleep for 100ms minus the time it took to run the loop, but only if it took less than 100ms to run the loop
         // This will ensure that we don't take up too much CPU time unless we need to.
-        if(ElapsedMicroseconds.QuadPart < 100){
-            Sleep((LONGLONG)100 - ElapsedMicroseconds.QuadPart);
+        if (ElapsedMicroseconds.QuadPart < 100) {
+            Sleep((LONGLONG) 100 - ElapsedMicroseconds.QuadPart);
         }
     }
     gh_StopEvent = CreateEvent(nullptr, TRUE, FALSE, nullptr);
@@ -132,7 +130,7 @@ VOID WINAPI ServiceCtrlHandler(DWORD fdwControl)
         SetServiceStatus(g_StatusHandle, &g_ServiceStatus);
         // TODO: Perform tasks necessary to stop the service here...
         MainLogic_H::stop();
-        while(!MainLogic_H::IsServiceStopped()){
+        while (!MainLogic_H::IsServiceStopped()) {
             Sleep(100);
         }
         // Signal the service to stop
@@ -270,10 +268,54 @@ bool StopService()
     return true;
 }
 
-void StartWindowsService(int startCode)
+bool IsAdmin() {
+    BOOL isAdmin = FALSE;
+    PSID administratorsGroup;
+    SID_IDENTIFIER_AUTHORITY ntAuthority = SECURITY_NT_AUTHORITY;
+    if (AllocateAndInitializeSid(&ntAuthority, 2, SECURITY_BUILTIN_DOMAIN_RID,
+        DOMAIN_ALIAS_RID_ADMINS, 0, 0, 0, 0, 0, 0,
+        &administratorsGroup)) {
+        CheckTokenMembership(NULL, administratorsGroup, &isAdmin);
+        FreeSid(administratorsGroup);
+    }
+    return isAdmin == TRUE;
+}
+
+void RestartAsAdmin(int argc, char* argv[]) {
+    char path[MAX_PATH];
+    GetModuleFileNameA(NULL, path, MAX_PATH);
+
+    SHELLEXECUTEINFOA shExInfo = {};
+    shExInfo.cbSize = sizeof(shExInfo);
+    shExInfo.fMask = SEE_MASK_DEFAULT;
+    shExInfo.hwnd = 0;
+    shExInfo.lpVerb = "runas";  // Run as admin
+    shExInfo.lpFile = path;     // Path to current executable
+    // fill lpParameters with the command line arguments
+    std::string params = "";
+    for (int i = 0; i < argc; i++) {
+        params += argv[i];
+        params += " ";
+    }
+    shExInfo.lpParameters = params.c_str(); // Any parameters
+    shExInfo.lpDirectory = 0;
+    shExInfo.nShow = SW_NORMAL;
+
+    if (!ShellExecuteExA(&shExInfo)) {
+        DWORD error = GetLastError();
+        // Handle error
+    }
+}
+
+void StartWindowsService(int startCode, int argc, char** argv)
 {
     if (startCode == 1 || startCode == 2)
     {
+        if (!IsAdmin()) {
+            std::cout << "Not running as admin. Restarting as admin..." << std::endl;
+            RestartAsAdmin(argc, argv);
+            return;
+        }
         std::cout << "Installing service..." << std::endl;
         if (IsServiceInstalled())
         {
@@ -302,31 +344,31 @@ void StartWindowsService(int startCode)
         SetServiceDescription(serviceName, serviceDescription);
         // start the service
         StartService();
-    } else if (startCode == 3){
-        if(IsServiceInstalled()){
+    } else if (startCode == 3) {
+        if (IsServiceInstalled()) {
             std::cout << "Service is installed." << std::endl;
             std::cout << "Attempting to start service..." << std::endl;
-            if(StartService()){
+            if (StartService()) {
                 std::cout << "Service started successfully." << std::endl;
-            }else{
+            } else {
                 std::cout << "Service failed to start." << std::endl;
             }
-        }else{
+        } else {
             std::cout << "Service is not installed. Use \"--install\" to install service." << std::endl;
         }
-    }else if (startCode == 4){
-        if(IsServiceInstalled()){
+    } else if (startCode == 4) {
+        if (IsServiceInstalled()) {
             std::cout << "Service is installed." << std::endl;
             std::cout << "Attempting to stop service..." << std::endl;
-            if(StopService()){
+            if (StopService()) {
                 std::cout << "Service stopped successfully." << std::endl;
-            }else{
+            } else {
                 std::cout << "Service failed to stop." << std::endl;
             }
-        }else{
+        } else {
             std::cout << "Service is not installed. Use \"--install\" to install service." << std::endl;
         }
-    }else
+    } else
     {
         SERVICE_TABLE_ENTRY ServiceTable[] = {
             {(LPSTR) serviceName, (LPSERVICE_MAIN_FUNCTION) ServiceMain},

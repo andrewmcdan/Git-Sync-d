@@ -7,14 +7,16 @@ IPC::IPC()
     // checking for and handling new messages and sending responses
 
     // create thread
-    IPC::running = true;
+    this->running = true;
+    IPC::shutdown_trigger = false;
     this->ipcThread = std::thread([&]()
-                                  { run(*this); });
+        { run(*this); });
 }
 
 IPC::~IPC()
 {
     this->running = false;
+    this->ipcThread.join();
     shared_memory_object::remove("GitSyncd-sharedMemory");
 }
 
@@ -24,7 +26,12 @@ bool IPC::pendingCommands()
     return this->commands.size() > 0;
 }
 
-void run(IPC &_this)
+static bool IPC::shutdown()
+{
+    return IPC::shutdown_trigger;
+}
+
+void run(IPC& _this)
 {
 #ifdef _WIN32
     // Windows
@@ -88,9 +95,9 @@ void run(IPC &_this)
 
     struct file_remove
     {
-        file_remove(const char *filename) : Filename_(filename) {}
+        file_remove(const char* filename) : Filename_(filename) {}
         ~file_remove() { file_mapping::remove(Filename_); }
-        const char *Filename_;
+        const char* Filename_;
     } remover(sharedMemoryFile.c_str());
     void* addr;
     try
@@ -117,8 +124,8 @@ void run(IPC &_this)
 
     std::memcpy(addr, &test, sizeof(command));
 
-    std::pair<command *, managed_shared_memory::size_type> commandVector;
-    std::pair<data *, managed_shared_memory::size_type> dataVector;
+    std::pair<command*, managed_shared_memory::size_type> commandVector;
+    std::pair<data*, managed_shared_memory::size_type> dataVector;
 
     std::vector<response> in_memory_responses;
     std::vector<std::string> response_keys;
@@ -157,7 +164,7 @@ void run(IPC &_this)
                             _response += std::to_string(slot);
                             _response += command;
                             _response += data;
-                            response *test = segment.construct<response>(_response.c_str())(_response.c_str(), "test");
+                            response* test = segment.construct<response>(_response.c_str())(_response.c_str(), "test");
                             in_memory_responses.push_back(*test);
                             response_keys.push_back(_response);
                         }

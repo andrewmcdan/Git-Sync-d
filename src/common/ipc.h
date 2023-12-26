@@ -20,20 +20,22 @@
 #endif
 
 using namespace boost::interprocess;
-class IPC{
-    public:
-        IPC();
-        ~IPC();
-        bool pendingCommands();
-        std::vector<std::string> commands;
-        std::vector<std::string> data;
-        bool running;
-        std::thread ipcThread;
-    private:
-        struct shm_remove{
-            shm_remove(){ shared_memory_object::remove("GitSyncd-sharedMemory"); }
-            ~shm_remove(){ shared_memory_object::remove("GitSyncd-sharedMemory"); }
-        } remover;            
+class IPC {
+public:
+    IPC();
+    ~IPC();
+    bool pendingCommands();
+    std::vector<std::string> commands;
+    std::vector<std::string> data;
+    bool running;
+    std::thread ipcThread;
+    static bool shutdown_trigger;
+    static bool shutdown();
+private:
+    struct shm_remove {
+        shm_remove() { shared_memory_object::remove("GitSyncd-sharedMemory"); }
+        ~shm_remove() { shared_memory_object::remove("GitSyncd-sharedMemory"); }
+    } remover;
 };
 
 void run(IPC&);
