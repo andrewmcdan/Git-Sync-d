@@ -8,6 +8,8 @@
 #include "src/windows/service.h"
 #elif __linux__
 #include "src/linux/daemon.h"
+#elif __APPLE__
+#include "src/mac/daemon.h"
 #else
 #error "Unsupported platform!"
 #endif
