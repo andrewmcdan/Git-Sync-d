@@ -26,7 +26,7 @@ bool IPC::pendingCommands()
     return this->commands.size() > 0;
 }
 
-static bool IPC::shutdown()
+bool IPC::shutdown()
 {
     return IPC::shutdown_trigger;
 }

@@ -4,7 +4,7 @@ namespace MainLogic_H
 {
     MainLogic mainLogic;
 
-    void loop()
+    bool loop()
     {
         // this is the main service loop.
         // it will be called by the service/daemon
@@ -17,14 +17,22 @@ namespace MainLogic_H
             // 2. check if we have loaded the database
 
             // 3. check if we have loaded the credentials
-        }
-        else
+
+
+            // check to see if we have we received a shutdown command
+            if (mainLogic.ipc.shutdown())
+            {
+                mainLogic.stop();
+                return false; // this will break the service / daemon out of its loop
+            }
+        } else
         {
             // stop all the things
 
             // once everything is stopped...
             mainLogic.stopConfirmed();
         }
+        return true;
     }
 
     void stop()

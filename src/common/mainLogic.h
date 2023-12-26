@@ -18,13 +18,12 @@ namespace MainLogic_H
         void stop();
         void stopConfirmed();
         bool stopped;
-
+        IPC* ipc;
     private:
         bool running;
-        IPC *ipc;
     };
 
-    void loop();
+    bool loop();
     void stop();
     bool IsServiceStopped();
 }

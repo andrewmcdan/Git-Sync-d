@@ -91,10 +91,9 @@ void WINAPI ServiceMain(DWORD argc, LPTSTR* argv)
         // get high precision time
         QueryPerformanceCounter(&StartingTime);
         QueryPerformanceCounter(&Frequency);
-        MainLogic_H::loop(); // this is the main service loop.
-        if (MainLogic_H::IPC::shutdown()) {
+        if (!MainLogic_H::loop()) {
             break;
-        }
+        } // this is the main service loop.
         QueryPerformanceCounter(&EndingTime);
         // calculate the time it took to run the loop
         ElapsedMicroseconds.QuadPart = EndingTime.QuadPart - StartingTime.QuadPart;
