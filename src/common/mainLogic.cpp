@@ -2,6 +2,7 @@
 
 namespace MainLogic_H
 {
+    GIT_SYNC_D_ERROR::Error globalErrors(1000);
     MainLogic mainLogic;
 
     bool loop()
@@ -20,6 +21,13 @@ namespace MainLogic_H
 
 
             // check to see if we have we received a shutdown command
+            if(!mainLogic.ipc->running){
+                if(!GIT_SYNC_D_ERROR::Error::getLastError().second == GIT_SYNC_D_ERROR::IPC_MEMORY_MAPPED_FILE_ERROR)
+                    mainLogic.ipc->startRunThread();
+                else{
+                    // TODO: handle this error by logging to the system log
+                }
+            }
             if (IPC::shutdown())
             {
                 mainLogic.stop();

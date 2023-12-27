@@ -5,6 +5,7 @@
 #include "db.h"
 #include "credentials.h"
 #include "ipc.h"
+#include "error.h"
 #include <iostream>
 namespace MainLogic_H
 {

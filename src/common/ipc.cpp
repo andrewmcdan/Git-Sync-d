@@ -4,15 +4,8 @@ bool IPC::shutdown_trigger = false;
 
 IPC::IPC()
 {
-    // create a new thread to handle IPC
-    // this thread will be responsible for
-    // checking for and handling new messages and sending responses
-
-    // create thread
-    this->running = true;
     IPC::shutdown_trigger = false;
-    this->ipcThread = std::thread([&]()
-        { run(*this); });
+    this->startRunThread();
 }
 
 IPC::~IPC()
@@ -20,6 +13,13 @@ IPC::~IPC()
     this->running = false;
     this->ipcThread.join();
     shared_memory_object::remove("GitSyncd-sharedMemory");
+}
+
+void IPC::startRunThread()
+{
+    this->running = true;
+    this->ipcThread = std::thread([&]()
+        { run(*this); });
 }
 
 bool IPC::pendingCommands()
@@ -35,6 +35,15 @@ bool IPC::shutdown()
 
 void run(IPC& _this)
 {
+    // If the GUI is started as a child process of the service, we can use the managed_shared_memory
+    // class to communicate between the two processes.
+    // Otherwise we have to use a memory mapped file. 
+    // Normally, the GUI gets started by the service. But if the user exits the GUI, it will stop the service, and then is the
+    // user starts the GUI again, the service gets started as a separate process instead of a child process. 
+
+    // Also, when using the CLI, we have to use a memory mapped file, because the CLI is started as a separate process.
+
+    // Start the setup of the memory mapped file
 #ifdef _WIN32
     // Windows
     // get userdata folder
@@ -50,6 +59,8 @@ void run(IPC& _this)
     catch (...)
     {
         std::cout << "Error getting userdata folder!" << std::endl;
+        GIT_SYNC_D_ERROR::Error::error("Error getting userdata folder!", GIT_SYNC_D_ERROR::IPC_MEMORY_MAPPED_FILE_ERROR);
+        _this.running = false;
         return;
     }
 #elif __linux__
@@ -76,6 +87,8 @@ void run(IPC& _this)
     catch (...)
     {
         std::cout << "Error creating userdata folder!" << std::endl;
+        GIT_SYNC_D_ERROR::Error::error("Error creating userdata folder!", GIT_SYNC_D_ERROR::IPC_MEMORY_MAPPED_FILE_ERROR);
+        _this.running = false;
         return;
     }
     std::string sharedMemoryFile = userdataFolder + "sharedMemory";
@@ -92,6 +105,8 @@ void run(IPC& _this)
     catch (...)
     {
         std::cout << "Error creating shared memory file!" << std::endl;
+        GIT_SYNC_D_ERROR::Error::error("Error creating shared memory file!", GIT_SYNC_D_ERROR::IPC_MEMORY_MAPPED_FILE_ERROR);
+        _this.running = false;
         return;
     }
 
@@ -114,6 +129,8 @@ void run(IPC& _this)
     catch (...)
     {
         std::cout << "Error mapping shared memory file!" << std::endl;
+        GIT_SYNC_D_ERROR::Error::error("Error mapping shared memory file!", GIT_SYNC_D_ERROR::IPC_MEMORY_MAPPED_FILE_ERROR);
+        _this.running = false;
         return;
     }
 

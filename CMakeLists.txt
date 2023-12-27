@@ -51,6 +51,7 @@ file(GLOB SOURCES "src/*.cpp" "src/common/*.cpp")
 # Platform-specific sources
 if(WIN32)
   list(APPEND SOURCES "src/windows/service.cpp")
+  list(APPEND SOURCES "src/windows/eventlog.cpp")
 elseif(UNIX AND NOT APPLE)
   list(APPEND SOURCES "src/linux/daemon.cpp")
 elseif(APPLE)
