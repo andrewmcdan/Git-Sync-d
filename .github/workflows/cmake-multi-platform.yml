@@ -106,7 +106,8 @@ jobs:
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
 
     - name: Upload Artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: executable-${{ matrix.os }}
-        path: ${{ steps.strings.outputs.build-output-dir }}/bin
+        path: ${{ steps.strings.outputs.build-output-dir }}/bin/
+        if-no-files-found: warn

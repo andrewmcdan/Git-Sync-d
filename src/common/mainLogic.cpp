@@ -23,7 +23,6 @@ namespace MainLogic_H
             if (IPC::shutdown())
             {
                 mainLogic.stop();
-                return false; // this will break the service / daemon out of its loop
             }
         } else
         {
@@ -31,6 +30,7 @@ namespace MainLogic_H
 
             // once everything is stopped...
             mainLogic.stopConfirmed();
+            return false; // this will break the service / daemon out of its loop
         }
         return true;
     }
@@ -52,27 +52,18 @@ namespace MainLogic_H
 
     MainLogic::MainLogic()
     {
-        // this is the constructor.
-        // it will be called by the service/daemon
-        // when it is started.
         mainLogic.setRunning(true);
         ipc = new IPC();
     }
 
     MainLogic::~MainLogic()
     {
-        // this is the destructor.
-        // it will be called by the service/daemon
-        // when it is stopped.
         mainLogic.setRunning(false);
         ipc->~IPC();
     }
 
     bool MainLogic::isRunning()
     {
-        // this is the isRunning method.
-        // it will be called by the service/daemon
-        // to check if the service/daemon is running.
         return mainLogic.running;
     }
 

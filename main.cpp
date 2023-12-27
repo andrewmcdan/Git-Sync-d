@@ -50,6 +50,9 @@ int main(int argc, char** argv) {
 #elif __linux__
     StartLinuxDaemon(startCode, argc, argv);
 
+#elif __APPLE__
+    StartMacDaemon(startCode, argc, argv);
+
 #else
     std::cerr << "Unsupported platform!" << std::endl;
     return 1;
