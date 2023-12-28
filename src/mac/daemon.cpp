@@ -11,8 +11,8 @@ namespace Mac_Daemon
 
     void StartMacDaemon(int startCode, int argc, char **argv, std::function<void(std::string, GIT_SYNC_D_ERROR::_ErrorCode)> logEvent)
     {
+        MainLogic_H::setLogEvent(logEvent);
         sysLogEvent = logEvent;
-        MainLogic_H::setLogEvent(sysLogEvent);
         Daemonize();
         // Daemon-specific initialization and loop here...
     }

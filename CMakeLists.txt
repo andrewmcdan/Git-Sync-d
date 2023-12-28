@@ -92,7 +92,7 @@ if(WIN32)
 
   add_custom_command(
     TARGET Windows-Event-mc-build
-    COMMAND ${LINK_EXE} -dll -noentry ./GitSyncd.res
+    COMMAND ${LINK_EXE} -dll -noentry ./GitSyncd.res -out:../../../build/bin/GitSyncd.dll
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/windows/Event Log Resource Files/"
   )
 

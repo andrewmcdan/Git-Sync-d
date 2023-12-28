@@ -1,3 +1,4 @@
+#ifdef __APPLE__
 #ifndef MAC_DAEMON_H
 #define MAC_DAEMON_H
 
@@ -14,3 +15,4 @@ namespace Mac_Daemon{
 }
 
 #endif // MAC_DAEMON_H
+#endif

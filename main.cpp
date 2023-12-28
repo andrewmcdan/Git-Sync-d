@@ -46,25 +46,19 @@ int main(int argc, char** argv) {
         }
     }
     std::function<void(std::string, GIT_SYNC_D_ERROR::_ErrorCode)> sysLogEvent;
+    sysLogEvent = ([](std::string message, GIT_SYNC_D_ERROR::_ErrorCode code){
+        message = "Event log not available. Syslog message: " + message + " -- Error code:" + std::to_string(code);
+        GIT_SYNC_D_ERROR::Error::error(message, code);
+    });
 #ifdef _WIN32
     if(Windows_EventLog::tryRegisterWithEventLog()){
         sysLogEvent = Windows_EventLog::logEvent;
-    }else{
-        sysLogEvent = ([](std::string message, GIT_SYNC_D_ERROR::_ErrorCode code){
-            message = "Event log not available. Syslog message: " + message + " -- Error code:" + std::to_string(code);
-            GIT_SYNC_D_ERROR::Error::error(message, code);
-        });
     }
     Windows_Service::StartWindowsService(startCode, argc, argv, sysLogEvent);
-    
 #elif __linux__
     StartLinuxDaemon(startCode, argc, argv, sysLogEvent);
-    sysLogEvent = Linux_Daemon::sysLogEvent;
-
 #elif __APPLE__
     StartMacDaemon(startCode, argc, argv, sysLogEvent);
-    sysLogEvent = Mac_Daemon::sysLogEvent;
-
 #else
     std::cerr << "Unsupported platform!" << std::endl;
     return 1;
