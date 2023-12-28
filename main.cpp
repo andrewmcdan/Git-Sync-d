@@ -59,9 +59,11 @@ int main(int argc, char** argv) {
     
 #elif __linux__
     StartLinuxDaemon(startCode, argc, argv, sysLogEvent);
+    sysLogEvent = Linux_Daemon::sysLogEvent;
 
 #elif __APPLE__
     StartMacDaemon(startCode, argc, argv, sysLogEvent);
+    sysLogEvent = Mac_Daemon::sysLogEvent;
 
 #else
     std::cerr << "Unsupported platform!" << std::endl;

@@ -4,7 +4,13 @@
 #include <functional>
 #include <string>
 #include "../common/error.h"
+#include "../common/mainLogic.h"
 
-void StartMacDaemon(int startCode, int argc, char** argv, std::function<void(std::string, GIT_SYNC_D_ERROR::_ErrorCode)> logEvent);
+namespace Mac_Daemon{
+    void Daemonize();
+    bool IsRoot();
+    void RestartAsRoot(int argc, char* argv[]);
+    void StartMacDaemon(int startCode, int argc, char** argv, std::function<void(std::string, GIT_SYNC_D_ERROR::_ErrorCode)> logEvent);
+}
 
 #endif // MAC_DAEMON_H
