@@ -17,10 +17,10 @@ namespace Windows_Service
     bool IsServiceInstalled();
     void InstallService(const TCHAR *exePath);
     bool DeleteService();
-    bool SetServiceDescription(const char *description);
+    bool SetServiceDescription(const TCHAR *serviceName, const TCHAR *serviceDescription);
     bool StartService();
     bool StopService();
     bool IsAdmin();
-    void RestartAsAdmin(int argc, char **argv);
+    void RestartAsAdmin(int argc, char *argv[]);
 }
 #endif // WINDOWS_SERVICE_H

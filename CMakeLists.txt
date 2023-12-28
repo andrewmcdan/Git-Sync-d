@@ -61,9 +61,22 @@ endif()
 add_executable(Git-Sync-d main.cpp ${SOURCES})
 
 if(WIN32)
-  find_program(MC_EXE NAMES mc.exe PATHS [ "C:/Program Files (x86)/Windows Kits/10/bin/10.0.19041.0/x64/" "C:/Program Files (x86)/Windows Kits/10/bin/" ] REQUIRED)
-  find_program(RC_EXE NAMES rc.exe PATHS [ "C:/Program Files (x86)/Windows Kits/10/bin/10.0.19041.0/x64/" "C:/Program Files (x86)/Windows Kits/10/bin/" ] REQUIRED)
-  find_program(LINK_EXE NAMES link.exe PATHS [ "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.28.29333/bin/Hostx64/x64/" "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.28.29333/bin/Hostx64/x86/" "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.28.29333/bin/Hostx64/x64/" "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.28.29333/bin/Hostx64/x86/" ] REQUIRED)
+  find_program(MC_EXE NAMES mc.exe PATHS [ 
+  "C:/Program Files (x86)/Windows Kits/10/bin/10.0.19041.0/x64/" 
+  "C:/Program Files (x86)/Windows Kits/10/bin/" 
+  ] REQUIRED)
+  find_program(RC_EXE NAMES rc.exe PATHS [ 
+  "C:/Program Files (x86)/Windows Kits/10/bin/10.0.19041.0/x64/" 
+  "C:/Program Files (x86)/Windows Kits/10/bin/" 
+  ] REQUIRED)
+  find_program(LINK_EXE NAMES link.exe PATHS [ 
+  "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.28.29333/bin/Hostx64/x64/" 
+  "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.28.29333/bin/Hostx64/x86/" 
+  "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/MSBuild/Microsoft/VC" 
+  "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/MSBuild/Microsoft/VC/v170/" 
+  "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/MSBuild/Microsoft/VC/v160/"
+  "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/MSBuild/Microsoft/VC/v143/"  
+  ] REQUIRED)
   add_custom_target(Windows-Event-mc-build)
 
   add_custom_command(
