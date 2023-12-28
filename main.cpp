@@ -56,9 +56,9 @@ int main(int argc, char** argv) {
     }
     Windows_Service::StartWindowsService(startCode, argc, argv, sysLogEvent);
 #elif __linux__
-    StartLinuxDaemon(startCode, argc, argv, sysLogEvent);
+    Linux_Daemon::StartLinuxDaemon(startCode, argc, argv, sysLogEvent);
 #elif __APPLE__
-    StartMacDaemon(startCode, argc, argv, sysLogEvent);
+    Mac_Daemon::StartMacDaemon(startCode, argc, argv, sysLogEvent);
 #else
     std::cerr << "Unsupported platform!" << std::endl;
     return 1;
