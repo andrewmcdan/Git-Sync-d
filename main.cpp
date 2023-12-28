@@ -2,10 +2,11 @@
 #include <string>
 #include <cstdlib>
 #include <vector>
-
+#include <functional>
 
 #ifdef _WIN32
 #include "src/windows/service.h"
+#include "src/windows/eventLog.h"
 #elif __linux__
 #include "src/linux/daemon.h"
 #elif __APPLE__
@@ -44,14 +45,23 @@ int main(int argc, char** argv) {
             }
         }
     }
+    std::function<void(std::string, GIT_SYNC_D_ERROR::_ErrorCode)> logEvent;
 #ifdef _WIN32
-    StartWindowsService(startCode, argc, argv);
-
+    if(Windows_EventLog::tryRegisterWithEventLog()){
+        logEvent = Windows_EventLog::logEvent;
+    }else{
+        logEvent = ([](std::string message, GIT_SYNC_D_ERROR::_ErrorCode code){
+            message = "Event log not available. Syslog message: " + message + " -- Error code:" + std::to_string(code);
+            GIT_SYNC_D_ERROR::Error::error(message, code);
+        });
+    }
+    Windows_Service::StartWindowsService(startCode, argc, argv, logEvent);
+    
 #elif __linux__
-    StartLinuxDaemon(startCode, argc, argv);
+    StartLinuxDaemon(startCode, argc, argv, logEvent);
 
 #elif __APPLE__
-    StartMacDaemon(startCode, argc, argv);
+    StartMacDaemon(startCode, argc, argv, logEvent);
 
 #else
     std::cerr << "Unsupported platform!" << std::endl;

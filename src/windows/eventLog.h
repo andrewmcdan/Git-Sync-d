@@ -11,6 +11,7 @@
 #include <winevt.h>
 #include "../common/error.h"
 namespace Windows_EventLog{
-
+    bool tryRegisterWithEventLog();
+    void logEvent(std::string message, GIT_SYNC_D_ERROR::_ErrorCode code);
 }
 #endif // EVENTLOG_H

@@ -7,6 +7,7 @@
 namespace GIT_SYNC_D_ERROR
 {
     enum _ErrorCode {
+        CODE_NO_ERROR,
         GENERIC_INFO,
         IPC_MEMORY_MAPPED_FILE_ERROR,
         IPC_MANAGED_SHARED_MEMORY_ERROR,

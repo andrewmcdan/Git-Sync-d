@@ -27,5 +27,7 @@ namespace MainLogic_H
     bool loop();
     void stop();
     bool IsServiceStopped();
+    void setLogEvent(std::function<void(std::string, GIT_SYNC_D_ERROR::_ErrorCode)>);
+    
 }
 #endif // MAINLOGIC_H
