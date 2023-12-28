@@ -176,9 +176,6 @@ void run(IPC& _this)
 
                         if (dataSlot == slot)
                         {
-                            // this data is for this command
-                            // process the command and data
-                            // and send a response
                             std::string _response = "response";
                             _response += std::to_string(slot);
                             _response += command;

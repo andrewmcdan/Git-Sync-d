@@ -26,7 +26,7 @@ namespace Windows_EventLog
         HANDLE hEventSource;
         LPCTSTR lpszStrings[2];
         TCHAR Buffer[80];
-        sprintf_s(Buffer, 80, TEXT("Git Sync'd - Registering with the Event Log"));
+        sprintf_s(Buffer, 80, TEXT("Git Sync'd - Registered with the Event Log"));
         hEventSource = RegisterEventSourceA(NULL, "GitSyncD");
         if (hEventSource!=NULL)
         {
@@ -34,8 +34,8 @@ namespace Windows_EventLog
             lpszStrings[1] = NULL;
             ReportEvent(hEventSource, // Event log handle
                 EVENTLOG_INFORMATION_TYPE, // Event type
-                0, // Event category
-                0x102, // Event identifier
+                WINDOWS_EVENT_INFORMATION_CATEGORY, // Event category
+                WINDOWS_EVENT_MSG_INFORMATION, // Event identifier
                 NULL, // No security identifier
                 1, // Size of lpszStrings array
                 0, // No binary data
@@ -56,31 +56,38 @@ namespace Windows_EventLog
     void logEvent(std::string message, GIT_SYNC_D_ERROR::_ErrorCode code)
     {
         HANDLE hEventSource;
-        LPCTSTR lpszStrings[2];
+        LPCTSTR lpszStrings[1];
         TCHAR Buffer[1024];
         sprintf_s(Buffer, 80, TEXT("%s"), message.c_str());
         hEventSource = RegisterEventSourceA(NULL, "GitSyncD");
         if (hEventSource!=NULL)
         {
             WORD type;
+            WORD category;
+            DWORD ident;
             switch (code)
             {
             case GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO:
                 type = EVENTLOG_INFORMATION_TYPE;
+                category = WINDOWS_EVENT_INFORMATION_CATEGORY;
+                ident = WINDOWS_EVENT_MSG_INFORMATION;
                 break;
             case GIT_SYNC_D_ERROR::_ErrorCode::CODE_NO_ERROR:
                 type = EVENTLOG_INFORMATION_TYPE;
+                category = WINDOWS_EVENT_INFORMATION_CATEGORY;
+                ident = WINDOWS_EVENT_MSG_INFORMATION;
                 break;
             default:
                 type = EVENTLOG_ERROR_TYPE;
+                category = WINDOWS_EVENT_ERROR_CATEGORY;
+                ident = WINDOWS_EVENT_MSG_ERROR;
                 break;
             }
             lpszStrings[0] = Buffer;
-            lpszStrings[1] = NULL;
             if(!ReportEvent(hEventSource, // Event log handle
                 type, // Event type
-                0, // Event category
-                0, // Event identifier
+                category, // Event category
+                ident, // Event identifier
                 NULL, // No security identifier
                 1, // Size of lpszStrings array
                 0, // No binary data

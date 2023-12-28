@@ -10,6 +10,7 @@
 #include <windows.h>
 #include <winevt.h>
 #include "../common/error.h"
+#include "Event Log Resource Files/GitSyncD.h"
 namespace Windows_EventLog{
     bool tryRegisterWithEventLog();
     void logEvent(std::string message, GIT_SYNC_D_ERROR::_ErrorCode code);

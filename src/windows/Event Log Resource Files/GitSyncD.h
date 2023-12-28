@@ -46,86 +46,39 @@
 
 
 //
-// MessageId: NETWORK_CATEGORY
+// MessageId: WINDOWS_EVENT_ERROR_CATEGORY
 //
 // MessageText:
 //
-// Network Events
+// Error Events
 //
-#define NETWORK_CATEGORY                 ((WORD)0x00000001L)
+#define WINDOWS_EVENT_ERROR_CATEGORY     ((WORD)0x00000001L)
 
 //
-// MessageId: DATABASE_CATEGORY
+// MessageId: WINDOWS_EVENT_INFORMATION_CATEGORY
 //
 // MessageText:
 //
-// Database Events
+// Informational Events
 //
-#define DATABASE_CATEGORY                ((WORD)0x00000002L)
-
-//
-// MessageId: UI_CATEGORY
-//
-// MessageText:
-//
-// UI Events
-//
-#define UI_CATEGORY                      ((WORD)0x00000003L)
+#define WINDOWS_EVENT_INFORMATION_CATEGORY ((WORD)0x00000002L)
 
  // The following are the message definitions.
 //
-// MessageId: MSG_INVALID_COMMAND
+// MessageId: WINDOWS_EVENT_MSG_ERROR
 //
 // MessageText:
 //
-// The command is not valid.
+// Git Sync'd experienced an error. The following error message was logged:%n%1
 //
-#define MSG_INVALID_COMMAND              ((DWORD)0xC0020100L)
+#define WINDOWS_EVENT_MSG_ERROR          ((DWORD)0xC0000101L)
 
 //
-// MessageId: MSG_BAD_FILE_CONTENTS
+// MessageId: WINDOWS_EVENT_MSG_INFORMATION
 //
 // MessageText:
 //
-// File %1 contains content that is not valid.
+// %1
 //
-#define MSG_BAD_FILE_CONTENTS            ((DWORD)0xC0000101L)
-
-//
-// MessageId: MSG_RETRIES
-//
-// MessageText:
-//
-// There have been %1 retries with %2 success! Disconnect from
-// the server and try again later.
-//
-#define MSG_RETRIES                      ((DWORD)0x80000102L)
-
-//
-// MessageId: MSG_COMPUTE_CONVERSION
-//
-// MessageText:
-//
-// %1 %%4096 = %2 %%4097. 
-//
-#define MSG_COMPUTE_CONVERSION           ((DWORD)0x40000103L)
-
- // The following are the parameter strings */
-//
-// MessageId: QUARTS_UNITS
-//
-// MessageText:
-//
-// quarts%0
-//
-#define QUARTS_UNITS                     ((DWORD)0x00001000L)
-
-//
-// MessageId: GALLONS_UNITS
-//
-// MessageText:
-//
-// gallons%0
-//
-#define GALLONS_UNITS                    ((DWORD)0x00001001L)
+#define WINDOWS_EVENT_MSG_INFORMATION    ((DWORD)0x40000102L)
 

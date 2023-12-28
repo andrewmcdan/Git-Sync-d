@@ -60,10 +60,25 @@ endif()
 
 add_executable(Git-Sync-d main.cpp ${SOURCES})
 
-add_custom_target(Windows-Event-mc-build)
+if(WIN32)
+  add_custom_target(Windows-Event-mc-build)
 
-add_custom_command(
-  TARGET Windows-Event-mc-build
-  COMMAND "C:/Program Files (x86)/Windows Kits/10/bin/10.0.19041.0/x64/mc.exe" -U "${CMAKE_CURRENT_SOURCE_DIR}/src/windows/Event Log Resources/Git-Sync-d.mc"
-  WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/windows/Event Log Resources/"
-)
+  add_custom_command(
+    TARGET Windows-Event-mc-build
+    COMMAND "C:/Program Files (x86)/Windows Kits/10/bin/10.0.19041.0/x64/mc.exe" -U ./GitSyncd.mc
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/windows/Event Log Resource Files/"
+  )
+  add_custom_command(
+    TARGET Windows-Event-mc-build
+    COMMAND "C:/Program Files (x86)/Windows Kits/10/bin/10.0.19041.0/x64/rc.exe" ./GitSyncd.rc
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/windows/Event Log Resource Files/"
+  )
+
+  add_custom_command(
+    TARGET Windows-Event-mc-build
+    COMMAND cmd.exe /c "\"C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Auxiliary/Build/vcvarsall.bat\" amd64 && link -dll -noentry ./GitSyncd.res"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/windows/Event Log Resource Files/"
+  )
+
+  add_dependencies(Git-Sync-d Windows-Event-mc-build)
+ENDIF()

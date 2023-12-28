@@ -4,7 +4,7 @@ namespace MainLogic_H
 {
     GIT_SYNC_D_ERROR::Error globalErrors(1000);
     MainLogic mainLogic;
-    std::function<void(std::string, GIT_SYNC_D_ERROR::_ErrorCode)> logEvent;
+    std::function<void(std::string, GIT_SYNC_D_ERROR::_ErrorCode)> sysLogEvent;
 
     bool loop()
     {
@@ -27,7 +27,7 @@ namespace MainLogic_H
                     mainLogic.ipc->startRunThread();
                 else{
                     // TODO: handle this error by logging to the system log
-                    logEvent("IPC_MEMORY_MAPPED_FILE_ERROR", GIT_SYNC_D_ERROR::IPC_MEMORY_MAPPED_FILE_ERROR);
+                    sysLogEvent("IPC_MEMORY_MAPPED_FILE_ERROR", GIT_SYNC_D_ERROR::IPC_MEMORY_MAPPED_FILE_ERROR);
                 }
             }
             if (IPC::shutdown())
@@ -84,13 +84,13 @@ namespace MainLogic_H
 
     void setLogEvent(std::function<void(std::string, GIT_SYNC_D_ERROR::_ErrorCode)> _logEvent)
     {
-        logEvent = _logEvent;
+        sysLogEvent = _logEvent;
     }
 
     void MainLogic::stopConfirmed()
     {
         mainLogic.stopped = true;
-        logEvent("Git Sync'd has stopped", GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
+        sysLogEvent("Git Sync'd has stopped", GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
     }
 
 } // namespace MainLogic_H

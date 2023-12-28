@@ -12,7 +12,7 @@ namespace Windows_Service
     SERVICE_STATUS g_ServiceStatus = {};
     SERVICE_STATUS_HANDLE g_StatusHandle = nullptr;
     HANDLE gh_StopEvent = nullptr;
-    std::function<void(std::string, GIT_SYNC_D_ERROR::_ErrorCode)> logEvent;
+    std::function<void(std::string, GIT_SYNC_D_ERROR::_ErrorCode)> sysLogEvent;
 
     bool IsServiceInstalled()
     {
@@ -73,7 +73,7 @@ namespace Windows_Service
         {
             // Handle error
             std::cerr << "RegisterServiceCtrlHandler failed: " << GetLastError() << std::endl;
-            logEvent("RegisterServiceCtrlHandler failed: " + std::to_string(GetLastError()), GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
+            sysLogEvent("RegisterServiceCtrlHandler failed: " + std::to_string(GetLastError()), GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
             return;
         }
 
@@ -95,7 +95,7 @@ namespace Windows_Service
             // get high precision time
             QueryPerformanceCounter(&StartingTime);
             QueryPerformanceCounter(&Frequency);
-            MainLogic_H::setLogEvent(logEvent);
+            MainLogic_H::setLogEvent(sysLogEvent);
             if (!MainLogic_H::loop())
             {
                 break;
@@ -321,35 +321,35 @@ namespace Windows_Service
 
     void StartWindowsService(int startCode, int argc, char **argv, std::function<void(std::string, GIT_SYNC_D_ERROR::_ErrorCode)> _logEvent)
     {
-        logEvent = _logEvent;
+        sysLogEvent = _logEvent;
         if (startCode == 1 || startCode == 2)
         {
             if (!IsAdmin())
             {
                 std::cout << "Not running as admin. Restarting as admin..." << std::endl;
-                logEvent("Not running as admin. Restarting as admin...", GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
+                sysLogEvent("Not running as admin. Restarting as admin...", GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
                 RestartAsAdmin(argc, argv);
                 return;
             }
             std::cout << "Installing service..." << std::endl;
-            logEvent("Installing service...", GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
+            sysLogEvent("Installing service...", GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
             if (IsServiceInstalled())
             {
                 std::cout << "Service is already installed." << std::endl;
-                logEvent("Service is already installed.", GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
+                sysLogEvent("Service is already installed.", GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
                 if (startCode == 2)
                 {
                     std::cout << "Reinstalling service..." << std::endl;
-                    logEvent("Reinstalling service...", GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
+                    sysLogEvent("Reinstalling service...", GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
                     DeleteService();
                     std::cout << "Service is uninstalled." << std::endl;
-                    logEvent("Service is uninstalled.", GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
+                    sysLogEvent("Service is uninstalled.", GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
                 }
             }
             else
             {
                 std::cout << "Service is not installed." << std::endl;
-                logEvent("Service is not installed.", GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
+                sysLogEvent("Service is not installed.", GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
             }
             // get the current working directory
             TCHAR path[MAX_PATH];
@@ -375,11 +375,12 @@ namespace Windows_Service
                 if (StartService())
                 {
                     std::cout << "Service started successfully." << std::endl;
+                    sysLogEvent("Service already running or started successfully.", GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
                 }
                 else
                 {
                     std::cout << "Service failed to start." << std::endl;
-                    logEvent("Service failed to start.", GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
+                    sysLogEvent("Service failed to start.", GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
                 }
             }
             else
@@ -400,7 +401,7 @@ namespace Windows_Service
                 else
                 {
                     std::cout << "Service failed to stop." << std::endl;
-                    logEvent("Service failed to stop.", GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
+                    sysLogEvent("Service failed to stop.", GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
                 }
             }
             else
