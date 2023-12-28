@@ -70,12 +70,9 @@ if(WIN32)
   "C:/Program Files (x86)/Windows Kits/10/bin/" 
   ] REQUIRED)
   find_program(LINK_EXE link.exe HINTS [ 
-  "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.28.29333/bin/Hostx64/x64/" 
-  "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.28.29333/bin/Hostx64/x86/" 
+  "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/" 
   "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/MSBuild/Microsoft/VC" 
-  "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/MSBuild/Microsoft/VC/v170/" 
-  "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/MSBuild/Microsoft/VC/v160/"
-  "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/MSBuild/Microsoft/VC/v143/"  
+  "C:/Program Files/Microsoft Visual Studio/2022/"
   ] REQUIRED NO_CACHE)
   add_custom_target(Windows-Event-mc-build)
 
