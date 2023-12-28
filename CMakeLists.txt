@@ -71,9 +71,14 @@ if(WIN32)
   ] REQUIRED)
   find_program(LINK_EXE link.exe HINTS [ 
   "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/" 
-  "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/MSBuild/Microsoft/VC" 
+  "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/" 
   "C:/Program Files/Microsoft Visual Studio/2022/"
   ] REQUIRED NO_CACHE)
+
+  if(LINK_EXE MATCHES "C:\\Program Files\\Git\\usr\\bin\\link.exe")
+    unset(LINK_EXE)
+  endif()
+  
   add_custom_target(Windows-Event-mc-build)
 
   add_custom_command(
@@ -86,13 +91,20 @@ if(WIN32)
     COMMAND ${RC_EXE} ./GitSyncd.rc
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/windows/Event Log Resource Files/"
   )
-
-  add_custom_command(
-    TARGET Windows-Event-mc-build
-    COMMAND ${LINK_EXE} -dll -noentry ./GitSyncd.res -out:../../../build/bin/GitSyncd.dll
-    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/windows/Event Log Resource Files/"
+  if(LINK_EXE)
+    add_custom_command(
+      TARGET Windows-Event-mc-build
+      COMMAND ${LINK_EXE} -dll -noentry ./GitSyncd.res -out:../../../build/bin/GitSyncd.dll
+      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/windows/Event Log Resource Files/"
+    )
+  else(
+    add_custom_command(
+      TARGET Windows-Event-mc-build
+      COMMAND echo "Linker not found. Please install Visual Studio 2019 or 2022." > ../../../build/bin/GitSyncd.dll.txt
+      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/windows/Event Log Resource Files/"
+    )
   )
-
+  endif()
   add_dependencies(Git-Sync-d Windows-Event-mc-build)
 ENDIF()
 

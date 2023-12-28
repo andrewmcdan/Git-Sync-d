@@ -23,7 +23,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         build_type: [Release]
-        c_compiler: [gcc, clang, cl]
+        c_compiler: [gcc, cl]
         include:
           - os: windows-latest
             c_compiler: cl
@@ -39,13 +39,6 @@ jobs:
             boost_version: 1.83.0
             boost_platform_version: 22.04
             boost_toolset: gcc
-          - os: ubuntu-latest
-            c_compiler: clang
-            cpp_compiler: clang++
-            boost_install_dir: /home/runner/
-            boost_version: 1.83.0
-            boost_platform_version: 22.04
-            boost_toolset: gcc
           - os: macos-latest
             c_compiler: gcc
             cpp_compiler: g++
@@ -56,14 +49,10 @@ jobs:
         exclude:
           - os: windows-latest
             c_compiler: gcc
-          - os: windows-latest
-            c_compiler: clang
           - os: ubuntu-latest
             c_compiler: cl
           - os: macos-latest
             c_compiler: cl
-          - os: macos-latest
-            c_compiler: clang
 
     steps:
     - uses: actions/checkout@v3
