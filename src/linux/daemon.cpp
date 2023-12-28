@@ -1,14 +1,11 @@
 #ifdef __linux__
 #include "daemon.h"
-#include <unistd.h>
-#include <sys/stat.h>
-#include <syslog.h>
 
 void Daemonize() {
     // Daemonization process...
 }
 
-void StartLinuxDaemon(int startCode, int argc, char** argv) {
+void StartLinuxDaemon(int startCode, int argc, char** argv, std::function<void(std::string, GIT_SYNC_D_ERROR::_ErrorCode)> logEvent) {
     Daemonize();
     // Daemon-specific initialization and loop here...
 }
