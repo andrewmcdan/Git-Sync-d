@@ -76,7 +76,10 @@ if(WIN32)
   "C:/Program Files/Microsoft Visual Studio/2022/"
   ] REQUIRED NO_CACHE)
 
-  if(LINK_EXE MATCHES "C:\\Program Files\\Git\\usr\\bin\\link.exe")
+  if(LINK_EXE MATCHES "C:\\Program Files\\Git\\usr\\bin\\link.exe" OR LINK_EXE MATCHES "\"C:\\Program Files\\Git\\usr\\bin\\link.exe\"")
+    unset(LINK_EXE)
+  endif()
+  if(LINK_EXE MATCHES "C:/Program Files/Git/usr/bin/link.exe" OR LINK_EXE MATCHES "\"C:/Program Files/Git/usr/bin/link.exe\"")
     unset(LINK_EXE)
   endif()
   
@@ -101,8 +104,8 @@ if(WIN32)
   else(
     add_custom_command(
       TARGET Windows-Event-mc-build
-      COMMAND echo "Linker not found. Please install Visual Studio 2019 or 2022." > ../../../build/bin/GitSyncd.dll.txt
-      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/windows/Event Log Resource Files/"
+      COMMAND echo "Linker not found. Please install Visual Studio 2019 or 2022." > GitSyncd.dll.txt
+      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build/bin/"
     )
   )
   endif()
