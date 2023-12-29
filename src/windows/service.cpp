@@ -8,6 +8,9 @@ namespace Windows_Service
     const TCHAR *serviceDisplayName = _T("Git Sync'd Service");
     const TCHAR *serviceDescription = _T("Git Sync'd to a remote repository.");
 
+    STARTUPINFO si = {};
+    PROCESS_INFORMATION pi = {};
+
     // Service status structure
     SERVICE_STATUS g_ServiceStatus = {};
     SERVICE_STATUS_HANDLE g_StatusHandle = nullptr;
@@ -45,8 +48,8 @@ namespace Windows_Service
 
         SC_HANDLE serviceHandle = CreateServiceA(
             scmHandle, (LPCSTR)serviceName, (LPCSTR)serviceDisplayName,
-            SERVICE_START | SERVICE_STOP | DELETE | SERVICE_QUERY_STATUS | SERVICE_QUERY_CONFIG | SERVICE_PAUSE_CONTINUE,
-            SERVICE_WIN32_OWN_PROCESS,
+            SERVICE_START | SERVICE_STOP | DELETE | SERVICE_QUERY_STATUS | SERVICE_QUERY_CONFIG | SERVICE_PAUSE_CONTINUE | SERVICE_USER_DEFINED_CONTROL,
+            SERVICE_WIN32_OWN_PROCESS | SERVICE_INTERACTIVE_PROCESS,
             SERVICE_DEMAND_START, SERVICE_ERROR_NORMAL,
             (LPCSTR)exePath, nullptr, nullptr, nullptr, nullptr, nullptr);
 
@@ -131,10 +134,17 @@ namespace Windows_Service
         {
         case SERVICE_CONTROL_SHUTDOWN:
         case SERVICE_CONTROL_STOP:
+        {
             // Signal that the service is stopping
             g_ServiceStatus.dwCurrentState = SERVICE_STOP_PENDING;
             SetServiceStatus(g_StatusHandle, &g_ServiceStatus);
             // TODO: Perform tasks necessary to stop the service here...
+            LPDWORD exitCode = nullptr;
+            if(GetExitCodeProcess(pi.hProcess, exitCode)){
+                TerminateProcess(pi.hProcess, 0);
+                CloseHandle(pi.hProcess);
+                CloseHandle(pi.hThread);
+            }
             MainLogic_H::stop();
             while (!MainLogic_H::IsServiceStopped())
             {
@@ -144,6 +154,31 @@ namespace Windows_Service
             g_ServiceStatus.dwCurrentState = SERVICE_STOPPED;
             SetServiceStatus(g_StatusHandle, &g_ServiceStatus);
             break;
+        }
+        case SERVICE_CONTROL_START_CLI:
+        {
+            sysLogEvent("SERVICE_CONTROL_START_CLI called.", GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
+            // get current working directory
+            TCHAR path[MAX_PATH];
+            GetCurrentDirectory(MAX_PATH, path);
+            // launch cmd window as a child process
+
+            ZeroMemory(&si, sizeof(si));
+            si.cb = sizeof(si);
+            ZeroMemory(&pi, sizeof(pi));
+
+            
+            LPSTR args = (LPSTR)("powershell.exe -NoExit -Command \" cd " + std::string(path) + " | ./Git-Sync-D-CLI.exe --cli\"").c_str();
+            if (!CreateProcessA(NULL, args, nullptr, nullptr, FALSE, 0, nullptr, "\%HOMEDRIVE\%\%HOMEPATH\%", &si, &pi))
+            {
+                sysLogEvent("CreateProcess failed", GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
+            }
+            else
+            {
+                sysLogEvent("CLI started successfully.", GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
+            }
+            break;
+        }
         case SERVICE_CONTROL_INTERROGATE:
             break;
         default:
@@ -315,7 +350,7 @@ namespace Windows_Service
         if (!ShellExecuteExA(&shExInfo))
         {
             DWORD error = GetLastError();
-            // Handle error
+            // Handle error TODO:
         }
     }
 

@@ -1,6 +1,7 @@
+#pragma once
 #ifndef WINDOWS_SERVICE_H
 #define WINDOWS_SERVICE_H
-
+#define _WINSOCKAPI_
 #include <windows.h>
 #include <tchar.h>
 #include <iostream>
@@ -9,6 +10,10 @@
 #include <AccCtrl.h>
 #include <Aclapi.h>
 #include <functional>
+
+#define SERVICE_CONTROL_USER 128
+#define SERVICE_CONTROL_START_CLI (SERVICE_CONTROL_USER + 0)
+
 namespace Windows_Service
 {
     void WINAPI ServiceMain(DWORD argc, LPTSTR *argv);

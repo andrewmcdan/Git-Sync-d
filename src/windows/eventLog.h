@@ -3,8 +3,7 @@
 #define EVENTLOG_H
 
 #define KEY_PATH "SYSTEM\\CurrentControlSet\\Services\\EventLog\\Application\\GitSyncD"
-
-
+#define _WINSOCKAPI_
 #include <string>
 #include <vector>
 #include <windows.h>

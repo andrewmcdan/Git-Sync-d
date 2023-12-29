@@ -6,6 +6,8 @@
 #include "credentials.h"
 #include "ipc.h"
 #include "error.h"
+#include <string>
+#include <functional>
 #include <iostream>
 namespace MainLogic_H
 {
