@@ -126,6 +126,7 @@ void run(IPC& _this)
     local::stream_protocol::socket pipe(io_service);
     local::stream_protocol::acceptor acceptor(io_service, ep);
     acceptor.accept(pipe);
+    std::thread pipeThread([]() {});
 #endif
     typedef std::pair<int, std::string> command;          // command, slot: slot is used as a way to index which command is related to which data.
     typedef std::pair<int, std::string> data;             // data, slot: slot is used as a way to index which data is related to which command.
