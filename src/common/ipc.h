@@ -16,7 +16,6 @@
 #define PIPE_BUFFER_SIZE 1024
 
 #define USE_BOOST_ASIO
-
 #include <boost/asio.hpp>
 #include <boost/system/error_code.hpp>
 #include <boost/bind/bind.hpp>
