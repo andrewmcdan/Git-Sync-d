@@ -1,6 +1,8 @@
 #ifdef __APPLE__
 #include "daemon.h"
 
+// TODO: get rid of entire service / daemon code
+
 namespace Mac_Daemon
 {
     std::function<void(std::string, GIT_SYNC_D_ERROR::_ErrorCode)> sysLogEvent;
@@ -9,7 +11,7 @@ namespace Mac_Daemon
         // Daemonization process...
     }
 
-    void StartMacDaemon(int startCode, int argc, char **argv, std::function<void(std::string, GIT_SYNC_D_ERROR::_ErrorCode)> logEvent)
+    void StartMacDaemon(int startCode, int argc, char** argv, std::function<void(std::string, GIT_SYNC_D_ERROR::_ErrorCode)> logEvent)
     {
         MainLogic_H::setLogEvent(logEvent);
         sysLogEvent = logEvent;
@@ -22,9 +24,9 @@ namespace Mac_Daemon
         return true;
     }
 
-    void RestartAsRoot(int argc, char *argv[])
+    void RestartAsRoot(int argc, char* argv[])
     {
-        
+
     }
 }
 #endif

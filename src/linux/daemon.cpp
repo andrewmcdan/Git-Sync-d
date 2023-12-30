@@ -1,6 +1,8 @@
 #ifdef __linux__
 #include "daemon.h"
 
+// TODO: get rid of entire service / daemon code
+
 namespace Linux_Daemon
 {
     std::function<void(std::string, GIT_SYNC_D_ERROR::_ErrorCode)> sysLogEvent;
@@ -9,7 +11,7 @@ namespace Linux_Daemon
         // Daemonization process...
     }
 
-    void StartLinuxDaemon(int startCode, int argc, char **argv, std::function<void(std::string, GIT_SYNC_D_ERROR::_ErrorCode)> logEvent)
+    void StartLinuxDaemon(int startCode, int argc, char** argv, std::function<void(std::string, GIT_SYNC_D_ERROR::_ErrorCode)> logEvent)
     {
         sysLogEvent = logEvent;
         MainLogic_H::setLogEvent(sysLogEvent);
@@ -22,7 +24,7 @@ namespace Linux_Daemon
         return geteuid() == 0;
     }
 
-    void RestartAsRoot(int argc, char *argv[])
+    void RestartAsRoot(int argc, char* argv[])
     {
         execvp("sudo", argv);
     }

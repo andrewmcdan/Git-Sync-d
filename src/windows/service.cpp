@@ -1,6 +1,8 @@
 #ifdef _WIN32
 #include "service.h"
 
+// TODO: get rid of entire service / daemon code
+
 namespace Windows_Service
 {
     // Define service name
