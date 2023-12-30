@@ -11,10 +11,6 @@
 #include <Aclapi.h>
 #include <functional>
 
-
-
-
-
 #define SERVICE_CONTROL_USER 128
 #define SERVICE_CONTROL_START_CLI (SERVICE_CONTROL_USER + 0)
 

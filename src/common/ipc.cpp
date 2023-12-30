@@ -93,7 +93,7 @@ void run(IPC& _this)
                 GIT_SYNC_D_ERROR::Error::error("Error reading from named pipe: " + ec.message(), GIT_SYNC_D_ERROR::IPC_NAMED_PIPE_ERROR);
             }
             std::string buffer(buffer_vect.begin(), buffer_vect.end());
-            GIT_SYNC_D_ERROR::Error::error("Read from named pipe: " + buffer, GIT_SYNC_D_ERROR::GENERIC_INFO);
+            GIT_SYNC_D_ERROR::Error::error("Read " + std::to_string(bytes_transferred) + " bytes from named pipe.\nBuffer size: " + std::to_string(buffer.size()) + "\nMessage: " + buffer, GIT_SYNC_D_ERROR::GENERIC_INFO);
         });
 
     std::thread pipeThread([&]()
@@ -104,9 +104,9 @@ void run(IPC& _this)
                     break;
                 }
                 lock.unlock();
-                GIT_SYNC_D_ERROR::Error::error("pipeThread loop heartbeat...", GIT_SYNC_D_ERROR::GENERIC_INFO);
+                // GIT_SYNC_D_ERROR::Error::error("pipeThread loop heartbeat...", GIT_SYNC_D_ERROR::GENERIC_INFO);
                 try {
-                    io_service.run_one(ec);
+                    io_service.run(ec);
                     if (ec) {
                         GIT_SYNC_D_ERROR::Error::error("Error running io_service: " + ec.message(), GIT_SYNC_D_ERROR::IPC_NAMED_PIPE_ERROR);
                     }
@@ -117,7 +117,7 @@ void run(IPC& _this)
                 catch (...) {
                     GIT_SYNC_D_ERROR::Error::error("Error running io_service: unknown error", GIT_SYNC_D_ERROR::IPC_NAMED_PIPE_ERROR);
                 }
-                // std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
             }
         });
 #elif defined(BOOST_ASIO_HAS_LOCAL_SOCKETS)
@@ -146,18 +146,20 @@ void run(IPC& _this)
             GIT_SYNC_D_ERROR::Error::error("IPC thread loop heartbeat...", GIT_SYNC_D_ERROR::GENERIC_INFO);
         }
         loopCount++;
-        // if (pipe.is_open()) {
-            // pipe.async_read_some(buffer(buffer_vect1.data(), buffer_vect1.size()), [&](const error_code& ec, std::size_t bytes_transferred)
-            //     {
-            //         if (ec) {
-            //             GIT_SYNC_D_ERROR::Error::error("Error reading from named pipe: " + ec.message(), GIT_SYNC_D_ERROR::IPC_NAMED_PIPE_ERROR);
-            //         }
-            //         std::string buffer(buffer_vect1.begin(), buffer_vect1.end());
-            //         GIT_SYNC_D_ERROR::Error::error("Read from named pipe: " + buffer, GIT_SYNC_D_ERROR::GENERIC_INFO);
-            //     });
-        // } else {
-        //     GIT_SYNC_D_ERROR::Error::error("Pipe is not open", GIT_SYNC_D_ERROR::GENERIC_INFO);
-        // }
+        if (pipe.is_open()) {
+            pipe.async_read_some(buffer(buffer_vect1.data(), buffer_vect1.size()), [&](const error_code& ec, std::size_t bytes_transferred)
+                {
+                    if (ec) {
+                        GIT_SYNC_D_ERROR::Error::error("Error reading from named pipe: " + ec.message(), GIT_SYNC_D_ERROR::IPC_NAMED_PIPE_ERROR);
+                    }else{
+                        std::string buffer(buffer_vect1.begin(), buffer_vect1.begin() + bytes_transferred);
+                        if(bytes_transferred > 0)
+                            GIT_SYNC_D_ERROR::Error::error("Read " + std::to_string(bytes_transferred) + " bytes from named pipe.\nBuffer size: " + std::to_string(buffer.size()) + "\nMessage: " + buffer, GIT_SYNC_D_ERROR::GENERIC_INFO);
+                    }
+                });
+        } else {
+            GIT_SYNC_D_ERROR::Error::error("Pipe is not open", GIT_SYNC_D_ERROR::GENERIC_INFO);
+        }
         // sleep for a bit
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }

@@ -26,33 +26,49 @@ int main(int argc, char** argv) {
     }
 
     std::cout << "Git Sync'd Service / Daemon" << std::endl;
-    std::cout << "Usage: " << argv[0] << " [--install] [--reinstall] [--start] [--stop]" << std::endl;
+    std::cout << "Usage: " << argv[0] << " [--start] [--stop] [--syslog] [--disable-stdout]" << std::endl;
+    std::cout << "  --start: Start the service / daemon" << std::endl;
+    std::cout << "  --stop: Stop the service / daemon" << std::endl;
+    std::cout << "  --syslog: Enable logging to syslog (Windows only)" << std::endl;
+    std::cout << "  --disable-stdout: Disable logging to stdout" << std::endl;
+    std::cout << "  --help: Display this help message (not implemented)" << std::endl;
+    std::cout << "  --version: Display the version (not implemented)" << std::endl;
+    std::cout << "  --uninstall: Uninstall the service / daemon (not implemented)" << std::endl;
 
     int startCode = 0;
+    bool syslogEnabled = false;
+    bool disableStdout = false;
     if (args.size() > 1) {
         for (auto arg : args) {
-            if (arg == "--install") {
-                startCode = 1;
-            }
-            if (arg == "--reinstall") {
-                startCode = 2;
-            }
             if (arg == "--start") {
-                startCode = 3;
+                startCode = 2;
             }
             if (arg == "--stop") {
                 startCode = 4;
             }
+            if (arg == "--syslog") {
+                syslogEnabled = true;
+            }
+            if (arg == "--disable-stdout") {
+                disableStdout = true;
+            }
         }
     }
     std::function<void(std::string, GIT_SYNC_D_ERROR::_ErrorCode)> sysLogEvent;
-    sysLogEvent = ([](std::string message, GIT_SYNC_D_ERROR::_ErrorCode code){
-        message = "Event log not available. Syslog message: " + message + " -- Error code:" + std::to_string(code);
-        GIT_SYNC_D_ERROR::Error::error(message, code);
+    sysLogEvent = ([&](std::string message, GIT_SYNC_D_ERROR::_ErrorCode code){
+        message = "Git Sync'd message: " + message + "\n -- Message code:" + std::to_string(code);
+        std::cout << message << std::endl;
     });
+    GIT_SYNC_D_ERROR::Error::setSysLog(sysLogEvent);
 #ifdef _WIN32
-    if(Windows_EventLog::tryRegisterWithEventLog()){
-        sysLogEvent = Windows_EventLog::logEvent;
+    if(syslogEnabled && Windows_EventLog::tryRegisterWithEventLog()){
+        sysLogEvent = [&](std::string message, GIT_SYNC_D_ERROR::_ErrorCode code){
+            if(!disableStdout){
+                message = "Git Sync'd message: " + message + "\n -- Message code:" + std::to_string(code);
+                std::cout << message << std::endl;
+            }
+            Windows_EventLog::logEvent(message, code);
+        };
     }
     Windows_Service::StartWindowsService(startCode, argc, argv, sysLogEvent);
 #elif __linux__

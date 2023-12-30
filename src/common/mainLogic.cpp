@@ -10,7 +10,7 @@ namespace MainLogic_H
         // this is the main service loop.
         // it will be called by the service/daemon
         // and will run until the service/daemon is stopped.
-        if (mainLogic.isRunning())
+        while (mainLogic.isRunning())
         {
             // do all the things
             // 1. check that IPC is active / for new messages
@@ -34,7 +34,9 @@ namespace MainLogic_H
             {
                 mainLogic.stop();
             }
-        } else
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        }
+        if (mainLogic.stopped)
         {
             // stop all the things
 
