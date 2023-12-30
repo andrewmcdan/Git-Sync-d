@@ -27,6 +27,9 @@ endif()
 if(Boost_FOUND)
   include_directories(${Boost_INCLUDE_DIRS})
   link_directories(${Boost_LIBRARY_DIRS})
+  if(WIN32)
+    add_definitions(-D_WIN32_WINNT=0x0601)
+  endif()
 endif()
 
 # Platform-specific settings
@@ -87,25 +90,29 @@ if(WIN32)
 
   add_custom_command(
     TARGET Windows-Event-mc-build
-    COMMAND ${MC_EXE} -U ./GitSyncd.mc
+    COMMAND ${MC_EXE} -U ./GitSyncD.mc
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/windows/Event Log Resource Files/"
+    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/windows/Event Log Resource Files/GitSyncD.mc"
   )
   add_custom_command(
     TARGET Windows-Event-mc-build
-    COMMAND ${RC_EXE} ./GitSyncd.rc
+    COMMAND ${RC_EXE} ./GitSyncD.rc
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/windows/Event Log Resource Files/"
+    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/windows/Event Log Resource Files/GitSyncD.mc"
   )
   if(LINK_EXE)
     add_custom_command(
       TARGET Windows-Event-mc-build
-      COMMAND ${LINK_EXE} -dll -noentry ./GitSyncd.res -out:../../../build/bin/GitSyncd.dll
+      COMMAND ${LINK_EXE} -dll -noentry ./GitSyncD.res -out:../../../build/bin/GitSyncD.dll
       WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/windows/Event Log Resource Files/"
+      DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/windows/Event Log Resource Files/GitSyncD.mc"
     )
   else(
     add_custom_command(
       TARGET Windows-Event-mc-build
       COMMAND echo "Linker not found. Please install Visual Studio 2019 or 2022." > GitSyncd.dll.txt
       WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build/bin/"
+      DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/windows/Event Log Resource Files/GitSyncd.mc"
     )
   )
   endif()

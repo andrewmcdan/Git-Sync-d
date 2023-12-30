@@ -4,9 +4,9 @@
 namespace Windows_Service
 {
     // Define service name
-    const TCHAR *serviceName = _T("GitSyncdService");
-    const TCHAR *serviceDisplayName = _T("Git Sync'd Service");
-    const TCHAR *serviceDescription = _T("Git Sync'd to a remote repository.");
+    const TCHAR* serviceName = _T("GitSyncdService");
+    const TCHAR* serviceDisplayName = _T("Git Sync'd Service");
+    const TCHAR* serviceDescription = _T("Git Sync'd to a remote repository.");
 
     STARTUPINFO si = {};
     PROCESS_INFORMATION pi = {};
@@ -37,7 +37,7 @@ namespace Windows_Service
         return false;
     }
 
-    void InstallService(const TCHAR *exePath)
+    void InstallService(const TCHAR* exePath)
     {
         SC_HANDLE scmHandle = OpenSCManager(nullptr, nullptr, SC_MANAGER_CREATE_SERVICE);
         if (!scmHandle)
@@ -47,11 +47,11 @@ namespace Windows_Service
         }
 
         SC_HANDLE serviceHandle = CreateServiceA(
-            scmHandle, (LPCSTR)serviceName, (LPCSTR)serviceDisplayName,
+            scmHandle, (LPCSTR) serviceName, (LPCSTR) serviceDisplayName,
             SERVICE_START | SERVICE_STOP | DELETE | SERVICE_QUERY_STATUS | SERVICE_QUERY_CONFIG | SERVICE_PAUSE_CONTINUE | SERVICE_USER_DEFINED_CONTROL,
             SERVICE_WIN32_OWN_PROCESS | SERVICE_INTERACTIVE_PROCESS,
             SERVICE_DEMAND_START, SERVICE_ERROR_NORMAL,
-            (LPCSTR)exePath, nullptr, nullptr, nullptr, nullptr, nullptr);
+            (LPCSTR) exePath, nullptr, nullptr, nullptr, nullptr, nullptr);
 
         if (!serviceHandle)
         {
@@ -66,7 +66,7 @@ namespace Windows_Service
         CloseServiceHandle(scmHandle);
     }
 
-    void WINAPI ServiceMain(DWORD argc, LPTSTR *argv)
+    void WINAPI ServiceMain(DWORD argc, LPTSTR* argv)
     {
         LARGE_INTEGER StartingTime, EndingTime, ElapsedMicroseconds;
         LARGE_INTEGER Frequency;
@@ -114,7 +114,7 @@ namespace Windows_Service
             // This will ensure that we don't take up too much CPU time unless we need to.
             if (ElapsedMicroseconds.QuadPart < 100)
             {
-                Sleep((LONGLONG)100 - ElapsedMicroseconds.QuadPart);
+                Sleep((LONGLONG) 100 - ElapsedMicroseconds.QuadPart);
             }
         }
         gh_StopEvent = CreateEvent(nullptr, TRUE, FALSE, nullptr);
@@ -140,7 +140,7 @@ namespace Windows_Service
             SetServiceStatus(g_StatusHandle, &g_ServiceStatus);
             // TODO: Perform tasks necessary to stop the service here...
             LPDWORD exitCode = nullptr;
-            if(GetExitCodeProcess(pi.hProcess, exitCode)){
+            if (GetExitCodeProcess(pi.hProcess, exitCode)) {
                 TerminateProcess(pi.hProcess, 0);
                 CloseHandle(pi.hProcess);
                 CloseHandle(pi.hThread);
@@ -157,26 +157,26 @@ namespace Windows_Service
         }
         case SERVICE_CONTROL_START_CLI:
         {
-            sysLogEvent("SERVICE_CONTROL_START_CLI called.", GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
-            // get current working directory
-            TCHAR path[MAX_PATH];
-            GetCurrentDirectory(MAX_PATH, path);
-            // launch cmd window as a child process
+            sysLogEvent("SERVICE_CONTROL_START_CLI called. Currently, function is disabled.", GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
+            // sysLogEvent("SERVICE_CONTROL_START_CLI called.", GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
+            // // get current working directory
+            // TCHAR path[MAX_PATH];
+            // // LPSTR path;
+            // GetCurrentDirectoryA(MAX_PATH, path);
+            // // launch cmd window as a child process
 
-            ZeroMemory(&si, sizeof(si));
-            si.cb = sizeof(si);
-            ZeroMemory(&pi, sizeof(pi));
+            // ZeroMemory(&si, sizeof(si));
+            // si.cb = sizeof(si);
+            // ZeroMemory(&pi, sizeof(pi));
 
-            
-            LPSTR args = (LPSTR)("powershell.exe -NoExit -Command \" cd " + std::string(path) + " | ./Git-Sync-D-CLI.exe --cli\"").c_str();
-            if (!CreateProcessA(NULL, args, nullptr, nullptr, FALSE, 0, nullptr, "\%HOMEDRIVE\%\%HOMEPATH\%", &si, &pi))
-            {
-                sysLogEvent("CreateProcess failed", GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
-            }
-            else
-            {
-                sysLogEvent("CLI started successfully.", GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
-            }
+            // LPSTR args = (LPSTR) ("powershell.exe -NoExit -Command \" cd " + std::string(path) + " | ./Git-Sync-D-CLI.exe --cli\"").c_str();
+            // if (!CreateProcessA(NULL, args, nullptr, nullptr, FALSE, 0, nullptr, ((std::string) ("%HOMEDRIVE%") + ("%HOMEPATH%")).c_str(), &si, &pi))
+            // {
+            //     sysLogEvent("CreateProcess failed", GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
+            // } else
+            // {
+            //     sysLogEvent("CLI started successfully.", GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
+            // }
             break;
         }
         case SERVICE_CONTROL_INTERROGATE:
@@ -216,7 +216,7 @@ namespace Windows_Service
         return true;
     }
 
-    bool SetServiceDescription(const TCHAR *serviceName, const TCHAR *serviceDescription)
+    bool SetServiceDescription(const TCHAR* serviceName, const TCHAR* serviceDescription)
     {
         SC_HANDLE scmHandle = OpenSCManager(nullptr, nullptr, SC_MANAGER_CONNECT);
         if (!scmHandle)
@@ -234,7 +234,7 @@ namespace Windows_Service
         }
 
         SERVICE_DESCRIPTION description;
-        description.lpDescription = (LPTSTR)serviceDescription;
+        description.lpDescription = (LPTSTR) serviceDescription;
 
         if (!ChangeServiceConfig2(serviceHandle, SERVICE_CONFIG_DESCRIPTION, &description))
         {
@@ -316,8 +316,8 @@ namespace Windows_Service
         PSID administratorsGroup;
         SID_IDENTIFIER_AUTHORITY ntAuthority = SECURITY_NT_AUTHORITY;
         if (AllocateAndInitializeSid(&ntAuthority, 2, SECURITY_BUILTIN_DOMAIN_RID,
-                                     DOMAIN_ALIAS_RID_ADMINS, 0, 0, 0, 0, 0, 0,
-                                     &administratorsGroup))
+            DOMAIN_ALIAS_RID_ADMINS, 0, 0, 0, 0, 0, 0,
+            &administratorsGroup))
         {
             CheckTokenMembership(NULL, administratorsGroup, &isAdmin);
             FreeSid(administratorsGroup);
@@ -325,7 +325,7 @@ namespace Windows_Service
         return isAdmin == TRUE;
     }
 
-    void RestartAsAdmin(int argc, char *argv[])
+    void RestartAsAdmin(int argc, char* argv[])
     {
         char path[MAX_PATH];
         GetModuleFileNameA(NULL, path, MAX_PATH);
@@ -354,7 +354,7 @@ namespace Windows_Service
         }
     }
 
-    void StartWindowsService(int startCode, int argc, char **argv, std::function<void(std::string, GIT_SYNC_D_ERROR::_ErrorCode)> _logEvent)
+    void StartWindowsService(int startCode, int argc, char** argv, std::function<void(std::string, GIT_SYNC_D_ERROR::_ErrorCode)> _logEvent)
     {
         sysLogEvent = _logEvent;
         if (startCode == 1 || startCode == 2)
@@ -380,8 +380,7 @@ namespace Windows_Service
                     std::cout << "Service is uninstalled." << std::endl;
                     sysLogEvent("Service is uninstalled.", GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
                 }
-            }
-            else
+            } else
             {
                 std::cout << "Service is not installed." << std::endl;
                 sysLogEvent("Service is not installed.", GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
@@ -400,8 +399,7 @@ namespace Windows_Service
             SetServiceDescription(serviceName, serviceDescription);
             // start the service
             StartService();
-        }
-        else if (startCode == 3)
+        } else if (startCode == 3)
         {
             if (IsServiceInstalled())
             {
@@ -411,19 +409,16 @@ namespace Windows_Service
                 {
                     std::cout << "Service started successfully." << std::endl;
                     sysLogEvent("Service already running or started successfully.", GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
-                }
-                else
+                } else
                 {
                     std::cout << "Service failed to start." << std::endl;
                     sysLogEvent("Service failed to start.", GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
                 }
-            }
-            else
+            } else
             {
                 std::cout << "Service is not installed. Use \"--install\" to install service." << std::endl;
             }
-        }
-        else if (startCode == 4)
+        } else if (startCode == 4)
         {
             if (IsServiceInstalled())
             {
@@ -432,23 +427,20 @@ namespace Windows_Service
                 if (StopService())
                 {
                     std::cout << "Service stopped successfully." << std::endl;
-                }
-                else
+                } else
                 {
                     std::cout << "Service failed to stop." << std::endl;
                     sysLogEvent("Service failed to stop.", GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
                 }
-            }
-            else
+            } else
             {
                 std::cout << "Service is not installed. Use \"--install\" to install service." << std::endl;
             }
-        }
-        else
+        } else
         {
             SERVICE_TABLE_ENTRY ServiceTable[] = {
-                {(LPSTR)serviceName, (LPSERVICE_MAIN_FUNCTION)ServiceMain},
-                {nullptr, nullptr}};
+                {(LPSTR) serviceName, (LPSERVICE_MAIN_FUNCTION) ServiceMain},
+                {nullptr, nullptr} };
             if (StartServiceCtrlDispatcher(ServiceTable) == FALSE)
             {
                 std::cerr << "Error: Could not start the service." << std::endl;
