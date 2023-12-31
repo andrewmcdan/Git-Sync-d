@@ -13,7 +13,7 @@
 #include <cstdlib>
 #include <mutex>
 
-#define PIPE_BUFFER_SIZE 1024
+#define PIPE_BUFFER_SIZE 1024 * 16
 
 #define USE_BOOST_ASIO
 #include <boost/asio.hpp>

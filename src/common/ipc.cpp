@@ -149,6 +149,7 @@ void run(IPC& _this)
         if (pipe.is_open()) {
             pipe.async_read_some(buffer(buffer_vect1.data(), buffer_vect1.size()), [&](const error_code& ec, std::size_t bytes_transferred)
                 {
+                    // TODO: need to check if the pipe has ended and if so, close it and reopen it
                     if (ec) {
                         GIT_SYNC_D_ERROR::Error::error("Error reading from named pipe: " + ec.message(), GIT_SYNC_D_ERROR::IPC_NAMED_PIPE_ERROR);
                     }else{
