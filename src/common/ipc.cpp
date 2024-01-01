@@ -205,9 +205,9 @@ void restartPipe(boost::asio::windows::stream_handle &pipe, boost::asio::io_serv
 void restartPipe(boost::asio::local::stream_protocol::socket &pipe, boost::asio::io_service &io_service, std::string pipe_name)
 {
     // Create a local stream protocol socket.
-    local::stream_protocol::endpoint ep(pipe_name);
-    local::stream_protocol::socket pipe(io_service);
-    local::stream_protocol::acceptor acceptor(io_service, ep);
+    boost::asio::local::stream_protocol::endpoint ep(pipe_name);
+    boost::asio::local::stream_protocol::socket pipe(io_service);
+    boost::asio::local::stream_protocol::acceptor acceptor(io_service, ep);
     acceptor.accept(pipe);
 }
 #endif
