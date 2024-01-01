@@ -35,7 +35,7 @@ int main(int argc, char** argv) {
     std::cout << "  --version: Display the version (not implemented)" << std::endl;
     std::cout << "  --uninstall: Uninstall the service / daemon (not implemented)" << std::endl;
 
-    int startCode = 0;
+    int startCode = 2;
     bool syslogEnabled = false;
     bool disableStdout = false;
     if (args.size() > 1) {

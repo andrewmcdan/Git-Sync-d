@@ -51,5 +51,7 @@ private:
 };
 
 void run(IPC&);
+void restartPipe(boost::asio::windows::stream_handle &pipe, boost::asio::io_service &io_service, std::string pipe_name);
+
 
 #endif // IPC_H
