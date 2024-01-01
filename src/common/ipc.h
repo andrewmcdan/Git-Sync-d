@@ -51,7 +51,11 @@ private:
 };
 
 void run(IPC&);
+#if defined(BOOST_ASIO_HAS_WINDOWS_STREAM_HANDLE)
 void restartPipe(boost::asio::windows::stream_handle &pipe, boost::asio::io_service &io_service, std::string pipe_name);
+#elif defined(BOOST_ASIO_HAS_LOCAL_SOCKETS)
+void startPipe(boost::asio::local::stream_protocol::socket &pipe, boost::asio::io_service &io_service, std::string pipe_name);
+#endif
 
 
 #endif // IPC_H
