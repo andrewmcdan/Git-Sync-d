@@ -202,7 +202,7 @@ void restartPipe(boost::asio::windows::stream_handle &pipe, boost::asio::io_serv
     pipe = boost::asio::windows::stream_handle(io_service, pipe_handle);
 }
 #elif defined(BOOST_ASIO_HAS_LOCAL_SOCKETS)
-void startPipe(boost::asio::local::stream_protocol::socket &pipe, boost::asio::io_service &io_service, std::string pipe_name)
+void restartPipe(boost::asio::local::stream_protocol::socket &pipe, boost::asio::io_service &io_service, std::string pipe_name)
 {
     // Create a local stream protocol socket.
     local::stream_protocol::endpoint ep(pipe_name);
