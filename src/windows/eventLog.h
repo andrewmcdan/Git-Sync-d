@@ -13,6 +13,6 @@
 #include "Event Log Resource Files/GitSyncD.h"
 namespace Windows_EventLog {
     bool tryRegisterWithEventLog();
-    void logEvent(std::string message, GIT_SYNC_D_ERROR::_ErrorCode code);
+    void logEvent(std::string message, GIT_SYNC_D_MESSAGE::_ErrorCode code);
 }
 #endif // EVENTLOG_H

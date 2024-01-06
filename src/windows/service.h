@@ -18,7 +18,7 @@ namespace Windows_Service
 {
     void WINAPI ServiceMain(DWORD argc, LPTSTR* argv);
     VOID WINAPI ServiceCtrlHandler(DWORD fdwControl);
-    void StartWindowsService(int install, int argc, char** argv, std::function<void(std::string, GIT_SYNC_D_ERROR::_ErrorCode)> logEvent);
+    void StartWindowsService(int install, int argc, char** argv, std::function<void(std::string, GIT_SYNC_D_MESSAGE::_ErrorCode)> logEvent);
     bool IsServiceInstalled();
     void InstallService(const TCHAR* exePath);
     bool DeleteService();

@@ -6,7 +6,7 @@
 #include <functional>
 #include <mutex>
 
-namespace GIT_SYNC_D_ERROR
+namespace GIT_SYNC_D_MESSAGE
 {
     enum _ErrorCode {
         CODE_NO_ERROR,
@@ -30,9 +30,9 @@ namespace GIT_SYNC_D_ERROR
         static std::vector<error_t> errors;
         static size_t maxErrors;
         static size_t getErrorCount();
-        static void setSysLog(std::function<void(std::string, GIT_SYNC_D_ERROR::_ErrorCode)>);
+        static void setSysLog(std::function<void(std::string, GIT_SYNC_D_MESSAGE::_ErrorCode)>);
     private:
-        static std::function<void(std::string, GIT_SYNC_D_ERROR::_ErrorCode)> logEvent;
+        static std::function<void(std::string, GIT_SYNC_D_MESSAGE::_ErrorCode)> logEvent;
         static std::mutex mutex_write;
     };
 }

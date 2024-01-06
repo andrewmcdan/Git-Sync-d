@@ -1,24 +1,24 @@
 #include "error.h"
 
-namespace GIT_SYNC_D_ERROR
+namespace GIT_SYNC_D_MESSAGE
 {
     std::vector<error_t> Error::errors;
 
-    std::function<void(std::string, GIT_SYNC_D_ERROR::_ErrorCode)> Error::logEvent = nullptr;
+    std::function<void(std::string, GIT_SYNC_D_MESSAGE::_ErrorCode)> Error::logEvent = nullptr;
 
     size_t Error::maxErrors = 1024 * 16;
 
     std::mutex Error::mutex_write;
 
     Error::Error() {
-        Error::logEvent = [](std::string message, GIT_SYNC_D_ERROR::_ErrorCode code) {
+        Error::logEvent = [](std::string message, GIT_SYNC_D_MESSAGE::_ErrorCode code) {
             // default, do nothing
             };
     }
 
     Error::Error(size_t maxErrors) {
         Error::maxErrors = maxErrors;
-        Error::logEvent = [](std::string message, GIT_SYNC_D_ERROR::_ErrorCode code) {
+        Error::logEvent = [](std::string message, GIT_SYNC_D_MESSAGE::_ErrorCode code) {
             // default, do nothing
             };
     }
@@ -60,7 +60,7 @@ namespace GIT_SYNC_D_ERROR
         return Error::errors.size();
     }
 
-    void Error::setSysLog(std::function<void(std::string, GIT_SYNC_D_ERROR::_ErrorCode)> _logEvent) {
+    void Error::setSysLog(std::function<void(std::string, GIT_SYNC_D_MESSAGE::_ErrorCode)> _logEvent) {
         Error::logEvent = _logEvent;
     }
 }

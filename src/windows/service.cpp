@@ -5,7 +5,7 @@
 
 namespace Windows_Service
 {
-    std::function<void(std::string, GIT_SYNC_D_ERROR::_ErrorCode)> sysLogEvent = nullptr;
+    std::function<void(std::string, GIT_SYNC_D_MESSAGE::_ErrorCode)> sysLogEvent = nullptr;
 
     bool IsAdmin()
     {
@@ -48,12 +48,12 @@ namespace Windows_Service
         {
             DWORD error = GetLastError();
             if(sysLogEvent!=nullptr){
-                GIT_SYNC_D_ERROR::Error::error("Failed to restart as admin. Error code: " + std::to_string(error), GIT_SYNC_D_ERROR::_ErrorCode::SYSTEM_LOG_ERROR);
+                GIT_SYNC_D_MESSAGE::Error::error("Failed to restart as admin. Error code: " + std::to_string(error), GIT_SYNC_D_MESSAGE::_ErrorCode::SYSTEM_LOG_ERROR);
             }
         }
     }
 
-    void StartWindowsService(int startCode, int argc, char **argv, std::function<void(std::string, GIT_SYNC_D_ERROR::_ErrorCode)> _logEvent)
+    void StartWindowsService(int startCode, int argc, char **argv, std::function<void(std::string, GIT_SYNC_D_MESSAGE::_ErrorCode)> _logEvent)
     {
         sysLogEvent = _logEvent;
         switch(startCode){
@@ -61,7 +61,7 @@ namespace Windows_Service
                 {
                     if (!IsAdmin())
                     {
-                        GIT_SYNC_D_ERROR::Error::error("Git Sync'd is not running as admin. Restarting as admin.", GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
+                        GIT_SYNC_D_MESSAGE::Error::error("Git Sync'd is not running as admin. Restarting as admin.", GIT_SYNC_D_MESSAGE::_ErrorCode::GENERIC_INFO);
                         RestartAsAdmin(argc, argv);
                         return;
                     }

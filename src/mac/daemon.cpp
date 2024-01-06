@@ -5,13 +5,13 @@
 
 namespace Mac_Daemon
 {
-    std::function<void(std::string, GIT_SYNC_D_ERROR::_ErrorCode)> sysLogEvent;
+    std::function<void(std::string, GIT_SYNC_D_MESSAGE::_ErrorCode)> sysLogEvent;
     void Daemonize()
     {
         // Daemonization process...
     }
 
-    void StartMacDaemon(int startCode, int argc, char** argv, std::function<void(std::string, GIT_SYNC_D_ERROR::_ErrorCode)> logEvent)
+    void StartMacDaemon(int startCode, int argc, char** argv, std::function<void(std::string, GIT_SYNC_D_MESSAGE::_ErrorCode)> logEvent)
     {
         MainLogic_H::setLogEvent(logEvent);
         sysLogEvent = logEvent;

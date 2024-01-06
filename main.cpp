@@ -54,15 +54,15 @@ int main(int argc, char** argv) {
             }
         }
     }
-    std::function<void(std::string, GIT_SYNC_D_ERROR::_ErrorCode)> sysLogEvent;
-    sysLogEvent = ([&](std::string message, GIT_SYNC_D_ERROR::_ErrorCode code){
+    std::function<void(std::string, GIT_SYNC_D_MESSAGE::_ErrorCode)> sysLogEvent;
+    sysLogEvent = ([&](std::string message, GIT_SYNC_D_MESSAGE::_ErrorCode code){
         message = "Git Sync'd message: " + message + "\n -- Message code:" + std::to_string(code);
         std::cout << message << std::endl;
     });
-    GIT_SYNC_D_ERROR::Error::setSysLog(sysLogEvent);
+    GIT_SYNC_D_MESSAGE::Error::setSysLog(sysLogEvent);
 #ifdef _WIN32
     if(syslogEnabled && Windows_EventLog::tryRegisterWithEventLog()){
-        sysLogEvent = [&](std::string message, GIT_SYNC_D_ERROR::_ErrorCode code){
+        sysLogEvent = [&](std::string message, GIT_SYNC_D_MESSAGE::_ErrorCode code){
             if(!disableStdout){
                 message = "Git Sync'd message: " + message + "\n -- Message code:" + std::to_string(code);
                 std::cout << message << std::endl;

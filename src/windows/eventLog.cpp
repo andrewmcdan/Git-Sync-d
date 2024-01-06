@@ -16,13 +16,13 @@ namespace Windows_EventLog
                 RegCloseKey(hKey);
             }else{
                 std::string message = "Failed to create registry key: " + std::string(KEY_PATH);
-                GIT_SYNC_D_ERROR::Error::error(message, GIT_SYNC_D_ERROR::_ErrorCode::SYSTEM_LOG_ERROR);
+                GIT_SYNC_D_MESSAGE::Error::error(message, GIT_SYNC_D_MESSAGE::_ErrorCode::SYSTEM_LOG_ERROR);
                 return false;
             }
         }
 
         bool result = false;
-        GIT_SYNC_D_ERROR::Error::error("Registering Git Sync'd with the Event Log", GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO);
+        GIT_SYNC_D_MESSAGE::Error::error("Registering Git Sync'd with the Event Log", GIT_SYNC_D_MESSAGE::_ErrorCode::GENERIC_INFO);
         HANDLE hEventSource;
         LPCTSTR lpszStrings[2];
         TCHAR Buffer[80];
@@ -47,13 +47,13 @@ namespace Windows_EventLog
         else
         {
             std::string message = "RegisterEventSource failed with " + std::to_string(GetLastError());
-            GIT_SYNC_D_ERROR::Error::error(message, GIT_SYNC_D_ERROR::_ErrorCode::SYSTEM_LOG_ERROR);
+            GIT_SYNC_D_MESSAGE::Error::error(message, GIT_SYNC_D_MESSAGE::_ErrorCode::SYSTEM_LOG_ERROR);
             result = false;
         }
         return result;
     }
 
-    void logEvent(std::string message, GIT_SYNC_D_ERROR::_ErrorCode code)
+    void logEvent(std::string message, GIT_SYNC_D_MESSAGE::_ErrorCode code)
     {
         HANDLE hEventSource;
         LPCTSTR lpszStrings[1];
@@ -67,12 +67,12 @@ namespace Windows_EventLog
             DWORD ident;
             switch (code)
             {
-            case GIT_SYNC_D_ERROR::_ErrorCode::GENERIC_INFO:
+            case GIT_SYNC_D_MESSAGE::_ErrorCode::GENERIC_INFO:
                 type = EVENTLOG_INFORMATION_TYPE;
                 category = WINDOWS_EVENT_INFORMATION_CATEGORY;
                 ident = WINDOWS_EVENT_MSG_INFORMATION;
                 break;
-            case GIT_SYNC_D_ERROR::_ErrorCode::CODE_NO_ERROR:
+            case GIT_SYNC_D_MESSAGE::_ErrorCode::CODE_NO_ERROR:
                 type = EVENTLOG_INFORMATION_TYPE;
                 category = WINDOWS_EVENT_INFORMATION_CATEGORY;
                 ident = WINDOWS_EVENT_MSG_INFORMATION;
@@ -95,7 +95,7 @@ namespace Windows_EventLog
                 NULL) // No binary data
             ){
                 std::string message = "ReportEvent failed with " + std::to_string(GetLastError());
-                GIT_SYNC_D_ERROR::Error::error(message, GIT_SYNC_D_ERROR::_ErrorCode::SYSTEM_LOG_ERROR);
+                GIT_SYNC_D_MESSAGE::Error::error(message, GIT_SYNC_D_MESSAGE::_ErrorCode::SYSTEM_LOG_ERROR);
             }
             // unregister the event source
             DeregisterEventSource(hEventSource);
@@ -103,7 +103,7 @@ namespace Windows_EventLog
         else
         {
             std::string message = "RegisterEventSource failed with " + std::to_string(GetLastError());
-            GIT_SYNC_D_ERROR::Error::error(message, GIT_SYNC_D_ERROR::_ErrorCode::SYSTEM_LOG_ERROR);
+            GIT_SYNC_D_MESSAGE::Error::error(message, GIT_SYNC_D_MESSAGE::_ErrorCode::SYSTEM_LOG_ERROR);
         }
     }
 }
