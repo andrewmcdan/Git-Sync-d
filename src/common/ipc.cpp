@@ -267,7 +267,7 @@ void restartPipe(boost::asio::local::stream_protocol::socket& pipe, boost::asio:
 {
     // Create a local stream protocol socket.
     boost::asio::local::stream_protocol::endpoint ep(pipe_name);
-    boost::asio::local::stream_protocol::socket pipe(io_service);
+    pipe(io_service);
     boost::asio::local::stream_protocol::acceptor acceptor(io_service, ep);
     acceptor.accept(pipe);
 }
