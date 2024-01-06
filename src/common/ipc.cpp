@@ -142,8 +142,8 @@ void run(IPC& _this)
                     } else {
                         sleep_time = 50;
                         std::string buffer(buffer_vect1.begin(), buffer_vect1.begin() + bytes_transferred);
-                        if (bytes_transferred > 0)
-                            GIT_SYNC_D_MESSAGE::Error::error("Read " + std::to_string(bytes_transferred) + " bytes from named pipe.\nBuffer size: " + std::to_string(buffer.size()) + "\nMessage: " + buffer, GIT_SYNC_D_MESSAGE::GENERIC_INFO);
+                        // if (bytes_transferred > 0)
+                            // GIT_SYNC_D_MESSAGE::Error::error("Read " + std::to_string(bytes_transferred) + " bytes from named pipe.\nBuffer size: " + std::to_string(buffer.size()) + "\nMessage: " + buffer, GIT_SYNC_D_MESSAGE::GENERIC_INFO);
                         // parse the buffer
                         // the buffer is in the format: startPattern, totalLength, commandLength, dataLenth, slot, command, data, endPattern
                         // startPattern is a string of 8 bytes: 0x11,0x22,0x33,0x44 + CRC32 of that string (33A8BD4E) = 0x11,0x22,0x33,0x44,0x33,0xA8,0xBD,0x4E
