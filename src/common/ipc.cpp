@@ -93,6 +93,7 @@ void run(IPC& _this)
     local::stream_protocol::acceptor acceptor(io_service, ep);
     acceptor.accept(pipe);
 #endif
+
     std::thread pipeThread([&]()
         {
             while (true) {
@@ -103,6 +104,44 @@ void run(IPC& _this)
                 lock.unlock();
                 io_service.run(ec);
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            }
+        });
+
+    std::thread respondingThread([&]()
+        {
+            while (true) {
+                std::unique_lock<std::mutex> lock(_this.running_mutex);
+                if (!_this.running) {
+                    break;
+                }
+                lock.unlock();
+                response response_to_send = std::make_pair(0, "");
+                std::unique_lock<std::mutex> responses_vectors_mutex_lock(_this.responses_vectors_mutex);
+                bool responses_to_send_empty = _this.responses_to_send.size() == 0;
+                if (!responses_to_send_empty)
+                {
+                    response_to_send = _this.responses_to_send[0];
+                    _this.responses_to_send.erase(_this.responses_to_send.begin());
+                }
+                responses_vectors_mutex_lock.unlock();
+                if (!responses_to_send_empty) {
+                    union {
+                        char c[4];
+                        size_t i;
+                    } responseSize;
+                    responseSize.i = response_to_send.first;
+                    std::string responseStr = std::string(responseSize.c, 4) + response_to_send.second;
+                    GIT_SYNC_D_MESSAGE::Error::error("Sending response: " + responseStr, GIT_SYNC_D_MESSAGE::GENERIC_INFO);
+                    std::vector<char> buffer_vect(responseStr.begin(), responseStr.end());
+                    buffer_vect.push_back('\0');
+                    error_code ec;
+                    pipe.write_some(buffer(buffer_vect.data(), buffer_vect.size()), ec);
+                    if (ec) {
+                        GIT_SYNC_D_MESSAGE::Error::error("Error writing to named pipe: " + ec.message(), GIT_SYNC_D_MESSAGE::IPC_NAMED_PIPE_ERROR);
+                        GIT_SYNC_D_MESSAGE::Error::error("Error code: " + std::to_string(ec.value()), GIT_SYNC_D_MESSAGE::IPC_NAMED_PIPE_ERROR);
+                    }
+                }
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
             }
         });
 
@@ -257,6 +296,8 @@ void run(IPC& _this)
         std::unique_lock<std::mutex> responses_vectors_mutex_lock(_this.responses_vectors_mutex);
         if (_this.commands_to_parse.size() > 0 && _this.data_to_parse.size() > 0)
         {
+            responses_vectors_mutex_lock.unlock();
+            commands_data_vectors_mutex_lock.unlock();
             std::thread parseThread([&]() {
                 if (!parseCommands(_this.commands_to_parse, _this.data_to_parse, _this.responses_to_send, _this.commands_data_vectors_mutex, _this.responses_vectors_mutex))
                 {
@@ -270,6 +311,7 @@ void run(IPC& _this)
         std::this_thread::sleep_for(std::chrono::milliseconds(sleep_time));
     }
     pipeThread.join();
+    respondingThread.join();
     pipe.close();
 }
 
@@ -297,12 +339,12 @@ bool parseCommands(
     std::vector<data> data_to_parse_local;
     std::vector<response> responses_to_send_local;
 
-    std::unique_lock<std::mutex> lock(commands_data_vectors_mutex);
+    std::unique_lock<std::mutex> commands_data_vectors_mutex_lock(commands_data_vectors_mutex);
     commands_to_parse_local = commands_to_parse;
     data_to_parse_local = data_to_parse;
     commands_to_parse.clear();
     data_to_parse.clear();
-    lock.unlock();
+    commands_data_vectors_mutex_lock.unlock();
 
     if (commands_to_parse_local.size() == 0 || data_to_parse_local.size() == 0 || commands_to_parse_local.size() != data_to_parse_local.size()) {
         return false;
@@ -744,6 +786,9 @@ bool parseCommands(
         }
         }
     }
+    std::unique_lock<std::mutex> responses_vectors_mutex_lock(responses_vectors_mutex);
+    responses_to_send.insert(responses_to_send.end(), responses_to_send_local.begin(), responses_to_send_local.end());
+    responses_vectors_mutex_lock.unlock();
     return allCommandsParsed;
 }
 
@@ -1016,19 +1061,3 @@ void restartPipe(boost::asio::local::stream_protocol::socket& pipe, boost::asio:
     acceptor.accept(pipe);
 }
 #endif
-
-/**
- * Messages that may be received by the service/daemon:
- * - Trigger add file
- * - Trigger remove file
- * - Trigger add directory
- * - Trigger remove directory
- * - Trigger add repository
- * - Trigger remove repository
- * - Trigger add credential
- * - Trigger remove credential
- * - Trigger Sync
- * - Trigger Sync all
- *
- *
- */

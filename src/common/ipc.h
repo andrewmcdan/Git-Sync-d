@@ -80,7 +80,7 @@ enum SYNC_TYPE {
 
 typedef std::pair<int, COMMAND_CODE> command;  // slot, command: slot is used as a way to index which command is related to which data.
 typedef std::pair<int, std::string> data;     // slot, data: slot is used as a way to index which data is related to which command.
-typedef std::pair<size_t, std::string> response; // size, response: size of response (not including the size int), the original command and slot are concatenated to form the key for the response.
+typedef std::pair<size_t, std::string> response; // size, response: size of response (not including the size value), the original command and slot are concatenated to form the key for the response.
 
 class IPC {
 public:
