@@ -16,6 +16,9 @@
 
 #define PIPE_BUFFER_SIZE 1024 * 16
 
+#define START_PATTERN_STRING "\x11\x22\x33\x44\x33\xA8\xBD\x4E"
+#define END_PATTERN_STRING "\x88\x77\x66\x55\xF6\x9C\x29\xD9"
+
 #define USE_BOOST_ASIO
 #include <boost/asio.hpp>
 #include <boost/system/error_code.hpp>

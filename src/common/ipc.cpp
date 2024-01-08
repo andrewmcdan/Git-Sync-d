@@ -146,8 +146,8 @@ void run(IPC& _this)
                             GIT_SYNC_D_MESSAGE::Error::error("Read " + std::to_string(bytes_transferred) + " bytes from named pipe.\nBuffer size: " + std::to_string(buffer.size()) + "\nMessage: " + buffer, GIT_SYNC_D_MESSAGE::GENERIC_INFO);
                         // parse the buffer
                         // the buffer is in the format: startPattern, totalLength, dataLenth, slot, command, data, endPattern
-                        // startPattern is a string of 8 bytes: 0x11,0x22,0x33,0x44 + CRC32 of that string (33A8BD4E) = 0x11,0x22,0x33,0x44,0x33,0xA8,0xBD,0x4E
-                        // endPattern is a string of 8 bytes: 0x88,0x77,0x66,0x55 + CRC32 of that string (F69C29D9) = 0x88,0x77,0x66,0x55,0xF6,0x9C,0x29,0xD9
+                        // startPattern is a string of 8 bytes: 0x11,0x22,0x33,0x44 + CRC32 of that string (33A8BD4E) = 0x11,0x22,0x33,0x44,0x33,0xA8,0xBD,0x4E = START_PATTERN_STRING
+                        // endPattern is a string of 8 bytes: 0x88,0x77,0x66,0x55 + CRC32 of that string (F69C29D9) = 0x88,0x77,0x66,0x55,0xF6,0x9C,0x29,0xD9 = END_PATTERN_STRING
                         // totalLength is a 4 byte integer (not including startPattern and endPattern)
                         // dataLength is a 4 byte integer (not including null terminator)
                         // slot is a 4 byte integer
@@ -183,7 +183,7 @@ void run(IPC& _this)
                             if (bufferIndex + 8 < buffer.size())
                             {
                                 std::string startPattern(buffer.begin() + bufferIndex, buffer.begin() + bufferIndex + 8);
-                                if (startPattern != std::string("\x11\x22\x33\x44\x33\xA8\xBD\x4E"))
+                                if (startPattern != std::string(START_PATTERN_STRING))
                                 {
                                     bufferIndex++;
                                     continue;
@@ -225,7 +225,7 @@ void run(IPC& _this)
                             bufferIndex += dataLength.i;
                             // get the end pattern
                             std::string endPattern(buffer.begin() + bufferIndex, buffer.begin() + bufferIndex + 8);
-                            if (endPattern != std::string("\x88\x77\x66\x55\xF6\x9C\x29\xD9"))
+                            if (endPattern != std::string(END_PATTERN_STRING))
                             {
                                 break;
                             }
