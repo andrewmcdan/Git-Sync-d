@@ -16,6 +16,7 @@ namespace GIT_SYNC_D_MESSAGE
         IPC_MANAGED_SHARED_MEMORY_ERROR,
         IPC_NAMED_PIPE_ERROR,
         SYSTEM_LOG_ERROR,
+        IPC_MESSAGE_PARSE_ERROR,
     };
     typedef std::pair<std::string, _ErrorCode> error_t;
 
