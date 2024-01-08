@@ -285,7 +285,6 @@ void run(IPC& _this)
                             GIT_SYNC_D_MESSAGE::Error::error("Data: " + data.second + "\nslot: " + std::to_string(data.first) + "\n\n", GIT_SYNC_D_MESSAGE::GENERIC_INFO);
                         }
                         lock.unlock();
-
                     }
                 });
         } else
