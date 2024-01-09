@@ -3,7 +3,9 @@
 name: Build on Windows, Linux, and MacOS
 
 on:
-  push:
+  # push:
+  #   branches: [ "main" ]
+  pull_request:
     branches: [ "main" ]
 
 jobs:
