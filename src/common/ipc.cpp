@@ -126,11 +126,11 @@ void run(IPC& _this)
                 responses_vectors_mutex_lock.unlock();
                 if (!responses_to_send_empty) {
                     union {
-                        char c[4];
+                        char c[sizeof(size_t)];
                         size_t i;
                     } responseSize;
                     responseSize.i = response_to_send.first;
-                    std::string responseStr = std::string(responseSize.c, 4) + response_to_send.second;
+                    std::string responseStr = std::string(responseSize.c, sizeof(size_t)) + response_to_send.second;
                     GIT_SYNC_D_MESSAGE::Error::error("Sending response: " + responseStr, GIT_SYNC_D_MESSAGE::GENERIC_INFO);
                     std::vector<char> buffer_vect(responseStr.begin(), responseStr.end());
                     buffer_vect.push_back('\0');
@@ -147,6 +147,7 @@ void run(IPC& _this)
 
     size_t sleep_time = 50;
     std::vector<char> buffer_vect1(PIPE_BUFFER_SIZE);
+    std::vector<std::pair<bool, std::thread>> parseThreads;
 
     while (true)
     {
@@ -185,8 +186,8 @@ void run(IPC& _this)
                             GIT_SYNC_D_MESSAGE::Error::error("Read " + std::to_string(bytes_transferred) + " bytes from named pipe.\nBuffer size: " + std::to_string(buffer.size()) + "\nMessage: " + buffer, GIT_SYNC_D_MESSAGE::GENERIC_INFO);
                         // parse the buffer
                         // the buffer is in the format: startPattern, totalLength, dataLenth, slot, command, data, endPattern
-                        // startPattern is a string of 8 bytes: 0x11,0x22,0x33,0x44 + CRC32 of that string (33A8BD4E) = 0x11,0x22,0x33,0x44,0x33,0xA8,0xBD,0x4E = START_PATTERN_STRING
-                        // endPattern is a string of 8 bytes: 0x88,0x77,0x66,0x55 + CRC32 of that string (F69C29D9) = 0x88,0x77,0x66,0x55,0xF6,0x9C,0x29,0xD9 = END_PATTERN_STRING
+                        // startPattern is a string of 8 bytes: START_PATTERN_STRING
+                        // endPattern is a string of 8 bytes: END_PATTERN_STRING
                         // totalLength is a 4 byte integer (not including startPattern and endPattern)
                         // dataLength is a 4 byte integer (not including null terminator)
                         // slot is a 4 byte integer
@@ -194,6 +195,7 @@ void run(IPC& _this)
                         // data is a null terminated string
 
                         // union to convert from char array to int
+
                         union {
                             char c[4];
                             int i;
@@ -214,14 +216,9 @@ void run(IPC& _this)
                         size_t bufferIndex = 0;
                         while (bufferIndex < buffer.size())
                         {
-                            if (buffer[bufferIndex] = !'\x11')
-                            {
-                                bufferIndex++;
-                                continue;
-                            }
                             if (bufferIndex + 8 < buffer.size())
                             {
-                                std::string startPattern(buffer.begin() + bufferIndex, buffer.begin() + bufferIndex + 8);
+                                std::string startPattern = buffer.substr(bufferIndex, 8);
                                 if (startPattern != std::string(START_PATTERN_STRING))
                                 {
                                     bufferIndex++;
@@ -291,21 +288,38 @@ void run(IPC& _this)
         {
             GIT_SYNC_D_MESSAGE::Error::error("Pipe is not open", GIT_SYNC_D_MESSAGE::GENERIC_INFO);
         }
+
         std::unique_lock<std::mutex> commands_data_vectors_mutex_lock(_this.commands_data_vectors_mutex);
         std::unique_lock<std::mutex> responses_vectors_mutex_lock(_this.responses_vectors_mutex);
+        // check if there are any commands to parse
         if (_this.commands_to_parse.size() > 0 && _this.data_to_parse.size() > 0)
         {
-            responses_vectors_mutex_lock.unlock();
-            commands_data_vectors_mutex_lock.unlock();
-            std::thread parseThread([&]() {
+            size_t parseThreadsSize = parseThreads.size();
+            parseThreads.push_back(std::make_pair(false, std::thread([&, parseThreadsSize]() {
                 if (!parseCommands(_this.commands_to_parse, _this.data_to_parse, _this.responses_to_send, _this.commands_data_vectors_mutex, _this.responses_vectors_mutex))
                 {
                     GIT_SYNC_D_MESSAGE::Error::error("Error parsing commands", GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
                 }
-                });
+                parseThreads[parseThreadsSize].first = true;
+                })));
         }
-        responses_vectors_mutex_lock.unlock();
-        commands_data_vectors_mutex_lock.unlock();
+        // unlock the mutexes
+        if (responses_vectors_mutex_lock.owns_lock())
+            responses_vectors_mutex_lock.unlock();
+        if (commands_data_vectors_mutex_lock.owns_lock())
+            commands_data_vectors_mutex_lock.unlock();
+
+        // check if any of the parse threads are done
+        for (size_t i = 0; i < parseThreads.size(); i++)
+        {
+            if (parseThreads[i].first)
+            {
+                parseThreads[i].second.join();
+                parseThreads.erase(parseThreads.begin() + i);
+                i--;
+            }
+        }
+
         // sleep for a bit
         std::this_thread::sleep_for(std::chrono::milliseconds(sleep_time));
     }
@@ -440,7 +454,7 @@ bool parseCommands(
             }
             if (destDirectoryPath == "")
             {
-                GIT_SYNC_D_MESSAGE::Error::error("Error parsing data for addFile command. Unable to path destination directory path.", GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
+                GIT_SYNC_D_MESSAGE::Error::error("Error parsing data for addFile command. Unable to parse destination directory path.", GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
                 allCommandsParsed = false;
                 continue;
             }
@@ -461,7 +475,7 @@ bool parseCommands(
             // - check that the file exists
             if (!std::filesystem::exists(filePath))
             {
-                GIT_SYNC_D_MESSAGE::Error::error("Error parsing data for addFile command. Source file does not exist.", GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
+                GIT_SYNC_D_MESSAGE::Error::error("Error parsing data for addFile command. Source file does not exist. filePath: " + filePath, GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
                 allCommandsParsed = false;
                 continue;
             }
@@ -510,6 +524,7 @@ bool parseCommands(
             responseStr += std::to_string(commands_to_parse_local[i].second) + "-" + std::to_string(commands_to_parse_local[i].first);
             responseSize.i = responseStr.size();
             responses_to_send_local.push_back(std::make_pair(responseSize.i, responseStr));
+            break;
         }
         // - Trigger remove file
         case COMMAND_REMOVE_FILE:
@@ -599,6 +614,7 @@ bool parseCommands(
             responseStr += std::to_string(commands_to_parse_local[i].second) + "-" + std::to_string(commands_to_parse_local[i].first);
             responseSize.i = responseStr.size();
             responses_to_send_local.push_back(std::make_pair(responseSize.i, responseStr));
+            break;
         }
         // - Trigger add directory
         case COMMAND_ADD_DIRECTORY:
@@ -755,6 +771,7 @@ bool parseCommands(
             responseStr += std::to_string(commands_to_parse_local[i].second) + "-" + std::to_string(commands_to_parse_local[i].first);
             responseSize.i = responseStr.size();
             responses_to_send_local.push_back(std::make_pair(responseSize.i, responseStr));
+            break;
         }
         // - Trigger remove directory
         // - Trigger add remote repository
@@ -782,6 +799,7 @@ bool parseCommands(
             GIT_SYNC_D_MESSAGE::Error::error("Error parsing command. Unknown command code: " + std::to_string(commands_to_parse_local[i].second), GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
             allCommandsParsed = false;
             continue;
+            break;
         }
         }
     }
@@ -807,7 +825,7 @@ bool parseKeyValue(std::string& input, std::string& key, std::string& value)
     bool keyFound = false;
     for (size_t i = 0; i < input.size(); i++)
     {
-        if (input[i] == ':')
+        if (input[i] == ':' && !keyFound)
         {
             keyFound = true;
             continue;
@@ -1059,4 +1077,8 @@ void restartPipe(boost::asio::local::stream_protocol::socket& pipe, boost::asio:
     boost::asio::local::stream_protocol::acceptor acceptor(io_service, ep);
     acceptor.accept(pipe);
 }
+#endif
+
+#if defined(UNIT_TESTING)
+// Do unit tests stuff
 #endif

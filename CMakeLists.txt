@@ -64,6 +64,7 @@ endif()
 
 add_executable(Git-Sync-d main.cpp ${SOURCES})
 
+
 if(WIN32)
   find_program(MC_EXE mc.exe PATHS [ 
   "C:/Program Files (x86)/Windows Kits/10/bin/10.0.19041.0/x64/" 

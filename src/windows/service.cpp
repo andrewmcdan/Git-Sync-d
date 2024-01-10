@@ -1,8 +1,6 @@
 #ifdef _WIN32
 #include "service.h"
 
-// TODO: get rid of entire service / daemon code
-
 namespace Windows_Service
 {
     std::function<void(std::string, GIT_SYNC_D_MESSAGE::_ErrorCode)> sysLogEvent = nullptr;

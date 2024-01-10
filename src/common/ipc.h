@@ -1,3 +1,6 @@
+
+// #define UNIT_TESTING
+
 #pragma once
 #ifndef IPC_H
 #define IPC_H
@@ -13,11 +16,16 @@
 #include <cstdlib>
 #include <mutex>
 #include <filesystem>
+#include <cctype>
+
+#if defined(UNIT_TESTING)
+// include unit test headers
+#endif
 
 #define PIPE_BUFFER_SIZE 1024 * 16
 
-#define START_PATTERN_STRING "\x11\x22\x33\x44\x33\xA8\xBD\x4E"
-#define END_PATTERN_STRING "\x88\x77\x66\x55\xF6\x9C\x29\xD9"
+#define START_PATTERN_STRING "zL`93O5d"
+#define END_PATTERN_STRING "oY>U093Z"
 
 #define USE_BOOST_ASIO
 #include <boost/asio.hpp>
@@ -122,5 +130,9 @@ void restartPipe(boost::asio::windows::stream_handle& pipe, boost::asio::io_serv
 #elif defined(BOOST_ASIO_HAS_LOCAL_SOCKETS)
 void restartPipe(boost::asio::local::stream_protocol::socket& pipe, boost::asio::io_service& io_service, std::string pipe_name);
 #endif
+
+std::string convertStringWithUnreadableCharacters(std::string& input);
+std::string to_hex(unsigned int value);
+std::string fixStringFromPipe(std::string& input);
 
 #endif // IPC_H
