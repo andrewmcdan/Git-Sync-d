@@ -21,8 +21,7 @@ void IPC::startRunThread()
     std::unique_lock<std::mutex> lock(this->running_mutex);
     this->running = true;
     lock.unlock();
-    this->ipcThread = std::thread([&]()
-        { run(*this); });
+    this->ipcThread = std::thread([&]() { run(*this); });
 }
 
 bool IPC::pendingCommands()
@@ -61,11 +60,10 @@ void run(IPC& _this)
     // D: DACL, A: Allow, GA: Generic All, S-1-1-0: SID string for "Everyone"
     LPCSTR szSDDL = "D:(A;;GA;;;S-1-1-0)";
     if (!ConvertStringSecurityDescriptorToSecurityDescriptor(
-        szSDDL, SDDL_REVISION_1, &pSDDL, NULL))
-    {
+            szSDDL, SDDL_REVISION_1, &pSDDL, NULL)) {
         GIT_SYNC_D_MESSAGE::Error::error("Error converting string to security descriptor: " + std::to_string(GetLastError()), GIT_SYNC_D_MESSAGE::IPC_NAMED_PIPE_ERROR);
     }
-    pSD = (SECURITY_DESCRIPTOR*) pSDDL;
+    pSD = (SECURITY_DESCRIPTOR*)pSDDL;
     sa.nLength = sizeof(SECURITY_ATTRIBUTES);
     sa.lpSecurityDescriptor = pSD;
     sa.bInheritHandle = FALSE;
@@ -75,13 +73,12 @@ void run(IPC& _this)
         PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
         PIPE_TYPE_BYTE | PIPE_READMODE_BYTE,
         PIPE_UNLIMITED_INSTANCES, // unlimited instances of this pipe
-        PIPE_BUFFER_SIZE,         // outbound buffer
-        PIPE_BUFFER_SIZE,         // inbound buffer
-        0,                        // use default wait time
-        &sa                       // use default security attributes
+        PIPE_BUFFER_SIZE, // outbound buffer
+        PIPE_BUFFER_SIZE, // inbound buffer
+        0, // use default wait time
+        &sa // use default security attributes
     );
-    if (pipe_handle == INVALID_HANDLE_VALUE)
-    {
+    if (pipe_handle == INVALID_HANDLE_VALUE) {
         GIT_SYNC_D_MESSAGE::Error::error("Error creating named pipe. error: " + std::to_string(GetLastError()), GIT_SYNC_D_MESSAGE::IPC_NAMED_PIPE_ERROR);
         return;
     }
@@ -94,8 +91,7 @@ void run(IPC& _this)
     acceptor.accept(pipe);
 #endif
 
-    std::thread pipeThread([&]()
-        {
+    std::thread pipeThread([&]() {
             while (true) {
                 std::unique_lock<std::mutex> lock(_this.running_mutex);
                 if (!_this.running) {
@@ -104,11 +100,9 @@ void run(IPC& _this)
                 lock.unlock();
                 io_service.run(ec);
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
-            }
-        });
+            } });
 
-    std::thread respondingThread([&]()
-        {
+    std::thread respondingThread([&]() {
             while (true) {
                 std::unique_lock<std::mutex> lock(_this.running_mutex);
                 if (!_this.running) {
@@ -142,25 +136,20 @@ void run(IPC& _this)
                     }
                 }
                 std::this_thread::sleep_for(std::chrono::milliseconds(50));
-            }
-        });
+            } });
 
     size_t sleep_time = 50;
     std::vector<char> buffer_vect1(PIPE_BUFFER_SIZE);
     std::vector<std::pair<bool, std::thread>> parseThreads;
 
-    while (true)
-    {
+    while (true) {
         std::unique_lock<std::mutex> running_mutex_lock(_this.running_mutex);
-        if (!_this.running)
-        {
+        if (!_this.running) {
             break;
         }
         running_mutex_lock.unlock();
-        if (pipe.is_open())
-        {
-            pipe.async_read_some(buffer(buffer_vect1.data(), buffer_vect1.size()), [&](const error_code& ec, std::size_t bytes_transferred)
-                {
+        if (pipe.is_open()) {
+            pipe.async_read_some(buffer(buffer_vect1.data(), buffer_vect1.size()), [&](const error_code& ec, std::size_t bytes_transferred) {
                     if (ec) {
                         switch (ec.value()) {
                         case 536: // waiting for a connection
@@ -282,26 +271,22 @@ void run(IPC& _this)
                             GIT_SYNC_D_MESSAGE::Error::error("Data: " + data.second + "\nslot: " + std::to_string(data.first) + "\n\n", GIT_SYNC_D_MESSAGE::GENERIC_INFO);
                         }
                         lock.unlock();
-                    }
-                });
-        } else
-        {
+                    } });
+        } else {
             GIT_SYNC_D_MESSAGE::Error::error("Pipe is not open", GIT_SYNC_D_MESSAGE::GENERIC_INFO);
         }
 
         std::unique_lock<std::mutex> commands_data_vectors_mutex_lock(_this.commands_data_vectors_mutex);
         std::unique_lock<std::mutex> responses_vectors_mutex_lock(_this.responses_vectors_mutex);
         // check if there are any commands to parse
-        if (_this.commands_to_parse.size() > 0 && _this.data_to_parse.size() > 0)
-        {
+        if (_this.commands_to_parse.size() > 0 && _this.data_to_parse.size() > 0) {
             size_t parseThreadsSize = parseThreads.size();
             parseThreads.push_back(std::make_pair(false, std::thread([&, parseThreadsSize]() {
                 if (!parseCommands(_this.commands_to_parse, _this.data_to_parse, _this.responses_to_send, _this.commands_data_vectors_mutex, _this.responses_vectors_mutex))
                 {
                     GIT_SYNC_D_MESSAGE::Error::error("Error parsing commands", GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
                 }
-                parseThreads[parseThreadsSize].first = true;
-                })));
+                parseThreads[parseThreadsSize].first = true; })));
         }
         // unlock the mutexes
         if (responses_vectors_mutex_lock.owns_lock())
@@ -310,10 +295,8 @@ void run(IPC& _this)
             commands_data_vectors_mutex_lock.unlock();
 
         // check if any of the parse threads are done
-        for (size_t i = 0; i < parseThreads.size(); i++)
-        {
-            if (parseThreads[i].first)
-            {
+        for (size_t i = 0; i < parseThreads.size(); i++) {
+            if (parseThreads[i].first) {
                 parseThreads[i].second.join();
                 parseThreads.erase(parseThreads.begin() + i);
                 i--;
@@ -337,14 +320,13 @@ void run(IPC& _this)
  * @param commands_data_vectors_mutex The mutex for the commands and data vectors
  * @return true If the commands and data were parsed successfully
  * @return false If the commands and data were not parsed successfully
-*/
+ */
 bool parseCommands(
     std::vector<command>& commands_to_parse,
     std::vector<data>& data_to_parse,
     std::vector<response>& responses_to_send,
     std::mutex& commands_data_vectors_mutex,
-    std::mutex& responses_vectors_mutex
-)
+    std::mutex& responses_vectors_mutex)
 {
     bool allCommandsParsed = true;
 
@@ -363,27 +345,22 @@ bool parseCommands(
         return false;
     }
 
-    for (size_t i = 0; i < commands_to_parse_local.size(); i++)
-    {
+    for (size_t i = 0; i < commands_to_parse_local.size(); i++) {
         // parse the command
         // the command is in the format: slot, command
         // command is a null terminated string
         // slot is a 4 byte integer
         // the command is one of the following:
         // - Trigger add file
-        switch (commands_to_parse_local[i].second)
-        {
-        case COMMAND_ADD_FILE:
-        {
+        switch (commands_to_parse_local[i].second) {
+        case COMMAND_ADD_FILE: {
             std::string data;
-            //first check the corresponding index in data_to_parse_local to see if the slots match
+            // first check the corresponding index in data_to_parse_local to see if the slots match
             if (data_to_parse_local[i].first == commands_to_parse_local[i].first) {
                 data = data_to_parse_local[i].second;
             } else {
-                for (auto& data_pair : data_to_parse_local)
-                {
-                    if (data_pair.first == commands_to_parse_local[i].first)
-                    {
+                for (auto& data_pair : data_to_parse_local) {
+                    if (data_pair.first == commands_to_parse_local[i].first) {
                         data = data_pair.second;
                         break;
                     }
@@ -396,7 +373,7 @@ bool parseCommands(
             // destRepository: <name of the destination repository> (example-repository)
             // credential: <name of the credential> (example-credential) {optional} - if not specified, the default credential will be used
             // localRepository: <path to the local repository> (c:/users/username/documents/example-repository) {optional}
-            // syncTypeString: <sync type> 4 byte int, result of OR'ing SYNC_TYPE_REPO, SYNC_TYPE_TIME_FRAME, SYNC_TYPE_DIRECTORY, SYNC_TYPE_FILE, etc... 
+            // syncTypeString: <sync type> 4 byte int, result of OR'ing SYNC_TYPE_REPO, SYNC_TYPE_TIME_FRAME, SYNC_TYPE_DIRECTORY, SYNC_TYPE_FILE, etc...
             // syncTimeFrame: <time frame> (1h, 1d, 1w, 1m, 1y, 1h30m, 1d12h, etc...) {optional} - if not specified, the default time frame will be used
 
             std::string filePath = "";
@@ -409,63 +386,61 @@ bool parseCommands(
 
             std::vector<std::string> dataLines;
             std::string dataLine;
-            for (size_t i = 0; i < data.size(); i++)
-            {
-                if (data[i] == '\n')
-                {
+            for (size_t i = 0; i < data.size(); i++) {
+                if (data[i] == '\n') {
                     dataLines.push_back(dataLine);
                     dataLine = "";
-                } else
-                {
+                } else {
                     dataLine += data[i];
                 }
             }
-            if (dataLine != "")
-            {
+            if (dataLine != "") {
                 dataLines.push_back(dataLine);
             }
 
-            for (auto& line : dataLines)
-            {
+            for (auto& line : dataLines) {
                 std::string key;
                 std::string value;
                 bool keyFound = parseKeyValue(line, key, value);
-                if (!keyFound)
-                {
+                if (!keyFound) {
                     GIT_SYNC_D_MESSAGE::Error::error("Error parsing data for addFile command. Unable to parse key/value pair: " + line, GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
                     allCommandsParsed = false;
                     continue;
                 }
-                if (key == "file") filePath = value;
-                else if (key == "directory") destDirectoryPath = value;
-                else if (key == "destRepository") destRepository = value;
-                else if (key == "credential") credential = value;
-                else if (key == "localRepository") localRepository = value;
-                else if (key == "syncType") syncTypeString = value;
-                else if (key == "syncTimeFrame") syncTimeFrame = value;
+                if (key == "file")
+                    filePath = value;
+                else if (key == "directory")
+                    destDirectoryPath = value;
+                else if (key == "destRepository")
+                    destRepository = value;
+                else if (key == "credential")
+                    credential = value;
+                else if (key == "localRepository")
+                    localRepository = value;
+                else if (key == "syncType")
+                    syncTypeString = value;
+                else if (key == "syncTimeFrame")
+                    syncTimeFrame = value;
             }
-            if (!allCommandsParsed) continue;
+            if (!allCommandsParsed)
+                continue;
 
-            if (filePath == "")
-            {
+            if (filePath == "") {
                 GIT_SYNC_D_MESSAGE::Error::error("Error parsing data for addFile command. Unable to parse source file path.", GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
                 allCommandsParsed = false;
                 continue;
             }
-            if (destDirectoryPath == "")
-            {
+            if (destDirectoryPath == "") {
                 GIT_SYNC_D_MESSAGE::Error::error("Error parsing data for addFile command. Unable to parse destination directory path.", GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
                 allCommandsParsed = false;
                 continue;
             }
-            if (destRepository == "")
-            {
+            if (destRepository == "") {
                 GIT_SYNC_D_MESSAGE::Error::error("Error parsing data for addFile command. Unable to parse destination repository name.", GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
                 allCommandsParsed = false;
                 continue;
             }
-            if (syncTypeString == "")
-            {
+            if (syncTypeString == "") {
                 GIT_SYNC_D_MESSAGE::Error::error("Error parsing data for addFile command. Unable to parse sync type.", GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
                 allCommandsParsed = false;
                 continue;
@@ -473,8 +448,7 @@ bool parseCommands(
 
             // verify that the data is valid
             // - check that the file exists
-            if (!std::filesystem::exists(filePath))
-            {
+            if (!std::filesystem::exists(filePath)) {
                 GIT_SYNC_D_MESSAGE::Error::error("Error parsing data for addFile command. Source file does not exist. filePath: " + filePath, GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
                 allCommandsParsed = false;
                 continue;
@@ -486,11 +460,9 @@ bool parseCommands(
             } syncType_un;
             memcpy(syncType_un.c, syncTypeString.c_str(), 4);
 
-            if (syncType_un.i & SYNC_TYPE_REPO)
-            {
+            if (syncType_un.i & SYNC_TYPE_REPO) {
                 // check that the folder exists within a repo
-                if (!withinRepo(filePath) && localRepository == "")
-                {
+                if (!withinRepo(filePath) && localRepository == "") {
                     GIT_SYNC_D_MESSAGE::Error::error("Error parsing data for addFile command. Source file is not within a repository.", GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
                     allCommandsParsed = false;
                     continue;
@@ -498,46 +470,38 @@ bool parseCommands(
             }
 
             size_t syncTime_seconds = 0;
-            if (syncType_un.i & SYNC_TYPE_TIME_FRAME)
-            {
+            if (syncType_un.i & SYNC_TYPE_TIME_FRAME) {
                 // check that the time frame is valid
-                if (!parseTimeFrame(syncTimeFrame, syncTime_seconds))
-                {
+                if (!parseTimeFrame(syncTimeFrame, syncTime_seconds)) {
                     GIT_SYNC_D_MESSAGE::Error::error("Error parsing data for addFile command. Unable to parse time frame.", GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
                     allCommandsParsed = false;
                     continue;
                 }
             }
 
-            // TODO: add file
+            // TODO: add file -- The following call should return an int that corresponds to something like: 0 = success, 1 = error, 2 = already exists, 3 = exists in synced folder, etc...
             // MainLogic::addFile(filePath, destDirectoryPath, destRepository, credential, localRepository, syncType_un.i, syncTime_seconds);
             union {
                 char c[4];
                 size_t i;
             } responseSize;
             std::string responseStr = "";
-            if (/*the commented call above succeeds*/true) {
-                responseStr = "success:";
-            } else {
-                responseStr = "error:";
-            }
-            responseStr += std::to_string(commands_to_parse_local[i].second) + "-" + std::to_string(commands_to_parse_local[i].first);
+            int returnValue = 0; // = MainLogic::addFile(filePath, destDirectoryPath, destRepository, credential, localRepository, syncType_un.i, syncTime_seconds);
+            responseStr = "code:" + std::to_string(returnValue) + ":" + std::to_string(commands_to_parse_local[i].second) + "-" + std::to_string(commands_to_parse_local[i].first);
             responseSize.i = responseStr.size();
             responses_to_send_local.push_back(std::make_pair(responseSize.i, responseStr));
             break;
         }
         // - Trigger remove file
-        case COMMAND_REMOVE_FILE:
+        case COMMAND_REMOVE_SYNC: // TODO: change to COMMAND_REMOVE_SYNC that can act on files or folders and verify that existing code works for both
         {
             std::string data;
-            //first check the corresponding index in data_to_parse_local to see if the slots match
+            // first check the corresponding index in data_to_parse_local to see if the slots match
             if (data_to_parse_local[i].first == commands_to_parse_local[i].first) {
                 data = data_to_parse_local[i].second;
             } else {
-                for (auto& data_pair : data_to_parse_local)
-                {
-                    if (data_pair.first == commands_to_parse_local[i].first)
-                    {
+                for (auto& data_pair : data_to_parse_local) {
+                    if (data_pair.first == commands_to_parse_local[i].first) {
                         data = data_pair.second;
                         break;
                     }
@@ -549,42 +513,35 @@ bool parseCommands(
             std::string filePath = "";
             std::vector<std::string> dataLines;
             std::string dataLine;
-            for (size_t i = 0; i < data.size(); i++)
-            {
-                if (data[i] == '\n')
-                {
+            for (size_t i = 0; i < data.size(); i++) {
+                if (data[i] == '\n') {
                     dataLines.push_back(dataLine);
                     dataLine = "";
-                } else
-                {
+                } else {
                     dataLine += data[i];
                 }
             }
-            if (dataLine != "")
-            {
+            if (dataLine != "") {
                 dataLines.push_back(dataLine);
             }
 
-            for (auto& line : dataLines)
-            {
+            for (auto& line : dataLines) {
                 std::string key;
                 std::string value;
                 bool keyFound = parseKeyValue(line, key, value);
-                if (!keyFound)
-                {
+                if (!keyFound) {
                     GIT_SYNC_D_MESSAGE::Error::error("Error parsing data for removeFile command. Unable to parse key/value pair.", GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
                     allCommandsParsed = false;
                     continue;
                 }
-                if (key == "file")
-                {
+                if (key == "file") {
                     filePath = value;
                 }
             }
-            if (!allCommandsParsed) continue;
+            if (!allCommandsParsed)
+                continue;
 
-            if (filePath == "")
-            {
+            if (filePath == "") {
                 GIT_SYNC_D_MESSAGE::Error::error("Error parsing data for removeFile command. Unable to parse source file path.", GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
                 allCommandsParsed = false;
                 continue;
@@ -592,42 +549,34 @@ bool parseCommands(
 
             // verify that the data is valid
             // - check that the file exists
-            if (!std::filesystem::exists(filePath))
-            {
+            if (!std::filesystem::exists(filePath)) {
                 GIT_SYNC_D_MESSAGE::Error::error("Error parsing data for removeFile command. Source file does not exist.", GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
                 allCommandsParsed = false;
                 continue;
             }
 
             // TODO: remove file
-            // MainLogic::removeFile(filePath);
+            // MainLogic::removeSync(filePath); // returns an int that corresponds to something like: 0 = success, 1 = error, 2 = path not being synced, etc...
             union {
                 char c[4];
                 size_t i;
             } responseSize;
             std::string responseStr = "";
-            if (/*the commented call above succeeds*/true) {
-                responseStr = "success:";
-            } else {
-                responseStr = "error:";
-            }
-            responseStr += std::to_string(commands_to_parse_local[i].second) + "-" + std::to_string(commands_to_parse_local[i].first);
+            int returnValue = 0; // = MainLogic::removeSync(filePath);
+            responseStr = "code:" + std::to_string(returnValue) + ":" + std::to_string(commands_to_parse_local[i].second) + "-" + std::to_string(commands_to_parse_local[i].first);
             responseSize.i = responseStr.size();
             responses_to_send_local.push_back(std::make_pair(responseSize.i, responseStr));
             break;
         }
         // - Trigger add directory
-        case COMMAND_ADD_DIRECTORY:
-        {
+        case COMMAND_ADD_DIRECTORY: {
             std::string data;
-            //first check the corresponding index in data_to_parse_local to see if the slots match
+            // first check the corresponding index in data_to_parse_local to see if the slots match
             if (data_to_parse_local[i].first == commands_to_parse_local[i].first) {
                 data = data_to_parse_local[i].second;
             } else {
-                for (auto& data_pair : data_to_parse_local)
-                {
-                    if (data_pair.first == commands_to_parse_local[i].first)
-                    {
+                for (auto& data_pair : data_to_parse_local) {
+                    if (data_pair.first == commands_to_parse_local[i].first) {
                         data = data_pair.second;
                         break;
                     }
@@ -653,66 +602,64 @@ bool parseCommands(
 
             std::vector<std::string> dataLines;
             std::string dataLine;
-            for (size_t i = 0; i < data.size(); i++)
-            {
-                if (data[i] == '\n')
-                {
+            for (size_t i = 0; i < data.size(); i++) {
+                if (data[i] == '\n') {
                     dataLines.push_back(dataLine);
                     dataLine = "";
-                } else
-                {
+                } else {
                     dataLine += data[i];
                 }
             }
-            if (dataLine != "")
-            {
+            if (dataLine != "") {
                 dataLines.push_back(dataLine);
             }
 
-            for (auto& line : dataLines)
-            {
+            for (auto& line : dataLines) {
                 std::string key;
                 std::string value;
                 bool keyFound = parseKeyValue(line, key, value);
-                if (!keyFound)
-                {
+                if (!keyFound) {
                     GIT_SYNC_D_MESSAGE::Error::error("Error parsing data for addDirectory command. Unable to parse key/value pair: " + line, GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
                     allCommandsParsed = false;
                     continue;
                 }
-                if (key == "directory")directoryPath = value;
-                else if (key == "destDirectory") destDirectoryPath = value;
-                else if (key == "destRepository") destRepository = value;
-                else if (key == "credential") credential = value;
-                else if (key == "localRepository") localRepository = value;
-                else if (key == "syncType") syncTypeString = value;
-                else if (key == "syncTimeFrame") syncTimeFrame = value;
+                if (key == "directory")
+                    directoryPath = value;
+                else if (key == "destDirectory")
+                    destDirectoryPath = value;
+                else if (key == "destRepository")
+                    destRepository = value;
+                else if (key == "credential")
+                    credential = value;
+                else if (key == "localRepository")
+                    localRepository = value;
+                else if (key == "syncType")
+                    syncTypeString = value;
+                else if (key == "syncTimeFrame")
+                    syncTimeFrame = value;
             }
-            if (!allCommandsParsed) continue;
+            if (!allCommandsParsed)
+                continue;
 
-            if (directoryPath == "")
-            {
+            if (directoryPath == "") {
                 GIT_SYNC_D_MESSAGE::Error::error("Error parsing data for addDirectory command. Unable to parse source directory path.", GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
                 allCommandsParsed = false;
                 continue;
             }
 
-            if (destDirectoryPath == "")
-            {
+            if (destDirectoryPath == "") {
                 GIT_SYNC_D_MESSAGE::Error::error("Error parsing data for addDirectory command. Unable to parse destination directory path.", GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
                 allCommandsParsed = false;
                 continue;
             }
 
-            if (destRepository == "")
-            {
+            if (destRepository == "") {
                 GIT_SYNC_D_MESSAGE::Error::error("Error parsing data for addDirectory command. Unable to parse destination repository name.", GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
                 allCommandsParsed = false;
                 continue;
             }
 
-            if (syncTypeString == "")
-            {
+            if (syncTypeString == "") {
                 GIT_SYNC_D_MESSAGE::Error::error("Error parsing data for addDirectory command. Unable to parse sync type.", GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
                 allCommandsParsed = false;
                 continue;
@@ -720,8 +667,7 @@ bool parseCommands(
 
             // verify that the data is valid
             // - check that the directory exists
-            if (!std::filesystem::exists(directoryPath))
-            {
+            if (!std::filesystem::exists(directoryPath)) {
                 GIT_SYNC_D_MESSAGE::Error::error("Error parsing data for addDirectory command. Source directory does not exist.", GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
                 allCommandsParsed = false;
                 continue;
@@ -733,11 +679,9 @@ bool parseCommands(
             } syncType_un;
             memcpy(syncType_un.c, syncTypeString.c_str(), 4);
 
-            if (syncType_un.i & SYNC_TYPE_REPO)
-            {
+            if (syncType_un.i & SYNC_TYPE_REPO) {
                 // check that the folder exists within a repo
-                if (!withinRepo(directoryPath) && localRepository == "")
-                {
+                if (!withinRepo(directoryPath) && localRepository == "") {
                     GIT_SYNC_D_MESSAGE::Error::error("Error parsing data for addDirectory command. Source directory is not within a repository.", GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
                     allCommandsParsed = false;
                     continue;
@@ -745,11 +689,9 @@ bool parseCommands(
             }
 
             size_t syncTime_seconds = 0;
-            if (syncType_un.i & SYNC_TYPE_TIME_FRAME)
-            {
+            if (syncType_un.i & SYNC_TYPE_TIME_FRAME) {
                 // check that the time frame is valid
-                if (!parseTimeFrame(syncTimeFrame, syncTime_seconds))
-                {
+                if (!parseTimeFrame(syncTimeFrame, syncTime_seconds)) {
                     GIT_SYNC_D_MESSAGE::Error::error("Error parsing data for addDirectory command. Unable to parse time frame.", GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
                     allCommandsParsed = false;
                     continue;
@@ -763,7 +705,7 @@ bool parseCommands(
                 size_t i;
             } responseSize;
             std::string responseStr = "";
-            if (/*the commented call above succeeds*/true) {
+            if (/*the commented call above succeeds*/ true) {
                 responseStr = "success:";
             } else {
                 responseStr = "error:";
@@ -794,8 +736,7 @@ bool parseCommands(
         // - Read files
         // - Read directories
         // - Read sync types
-        default:
-        {
+        default: {
             GIT_SYNC_D_MESSAGE::Error::error("Error parsing command. Unknown command code: " + std::to_string(commands_to_parse_local[i].second), GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
             allCommandsParsed = false;
             continue;
@@ -817,24 +758,20 @@ bool parseCommands(
  * @param value The value
  * @return true If the key/value pair was parsed successfully
  * @return false If the key/value pair was not parsed successfully
-*/
+ */
 bool parseKeyValue(std::string& input, std::string& key, std::string& value)
 {
     key = "";
     value = "";
     bool keyFound = false;
-    for (size_t i = 0; i < input.size(); i++)
-    {
-        if (input[i] == ':' && !keyFound)
-        {
+    for (size_t i = 0; i < input.size(); i++) {
+        if (input[i] == ':' && !keyFound) {
             keyFound = true;
             continue;
         }
-        if (!keyFound)
-        {
+        if (!keyFound) {
             key += input[i];
-        } else
-        {
+        } else {
             value += input[i];
         }
     }
@@ -848,8 +785,9 @@ bool parseKeyValue(std::string& input, std::string& key, std::string& value)
  * @param time_frame The time frame in seconds
  * @return true If the time frame was parsed successfully
  * @return false If the time frame was not parsed successfully
-*/
-bool parseTimeFrame(std::string& _input, size_t& time_frame) {
+ */
+bool parseTimeFrame(std::string& _input, size_t& time_frame)
+{
     // walk throught the string and recursively parse the time frame
     // the time frame is in the format: <number><unit><number><unit><number><unit> etc...
     // <number> is an integer
@@ -866,24 +804,20 @@ bool parseTimeFrame(std::string& _input, size_t& time_frame) {
     std::string input = _input;
     time_frame = 0;
     // first check if the input is empty
-    if (input == "")
-    {
+    if (input == "") {
         GIT_SYNC_D_MESSAGE::Error::error("Error parsing time frame. Input is empty.", GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
         return false;
     }
 
     // check if the input is a number
     bool isNumber = true;
-    for (size_t i = 0; i < input.size(); i++)
-    {
-        if (!isdigit(input[i]))
-        {
+    for (size_t i = 0; i < input.size(); i++) {
+        if (!isdigit(input[i])) {
             isNumber = false;
             break;
         }
     }
-    if (isNumber)
-    {
+    if (isNumber) {
         time_frame = std::stoi(input);
         return true;
     }
@@ -891,87 +825,70 @@ bool parseTimeFrame(std::string& _input, size_t& time_frame) {
     std::string numberStr = "";
     std::string unitStr = "";
     bool numberFound = false;
-    for (size_t i = 0; i < input.size(); i++)
-    {
-        if (isdigit(input[i]))
-        {
+    for (size_t i = 0; i < input.size(); i++) {
+        if (isdigit(input[i])) {
             numberFound = true;
             numberStr += input[i];
-        } else
-        {
-            if (numberFound)
-            {
+        } else {
+            if (numberFound) {
                 unitStr = input[i];
                 break;
-            } else
-            {
+            } else {
                 GIT_SYNC_D_MESSAGE::Error::error("Error parsing time frame. Unable to parse number.", GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
                 return false;
             }
         }
     }
-    if (numberStr == "" || unitStr == "")
-    {
+    if (numberStr == "" || unitStr == "") {
         GIT_SYNC_D_MESSAGE::Error::error("Error parsing time frame. Unable to parse number or unit.", GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
         return false;
     }
     size_t number = std::stoi(numberStr);
     size_t unit = 0;
-    switch (unitStr[0])
-    {
-    case 's':
-    {
+    switch (unitStr[0]) {
+    case 's': {
         unit = 1;
         break;
     }
-    case 'm':
-    {
+    case 'm': {
         unit = 60;
         break;
     }
-    case 'h':
-    {
+    case 'h': {
         unit = 3600;
         break;
     }
-    case 'd':
-    {
+    case 'd': {
         unit = 86400;
         break;
     }
-    case 'w':
-    {
+    case 'w': {
         unit = 604800;
         break;
     }
-    case 'M':
-    {
+    case 'M': {
         unit = 2592000;
         break;
     }
-    case 'y':
-    {
+    case 'y': {
         unit = 31536000;
         break;
     }
-    default:
-    {
+    default: {
         GIT_SYNC_D_MESSAGE::Error::error("Error parsing time frame. Unknown unit: " + unitStr, GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
         return false;
     }
     }
     size_t time_frame_local = number * unit;
     std::string recursiveInput = input.substr(numberStr.size() + unitStr.size());
-    if (recursiveInput == "")
-    {
+    if (recursiveInput == "") {
         // Base case
         time_frame = time_frame_local;
         return true;
     }
     size_t time_frame_recursive = 0;
     bool recursiveParse = parseTimeFrame(recursiveInput, time_frame_recursive);
-    if (!recursiveParse)
-    {
+    if (!recursiveParse) {
         GIT_SYNC_D_MESSAGE::Error::error("Error parsing time frame. Unable to parse recursive time frame.", GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
         return false;
     }
@@ -985,8 +902,9 @@ bool parseTimeFrame(std::string& _input, size_t& time_frame) {
  * @param path The path to check
  * @return true If the path is within a repository
  * @return false If the path is not within a repository
-*/
-bool withinRepo(std::string& path) {
+ */
+bool withinRepo(std::string& path)
+{
     if (path == "") {
         return false;
     }
@@ -1005,8 +923,7 @@ bool withinRepo(std::string& path) {
     std::filesystem::path parentPath;
     try {
         parentPath = std::filesystem::path(path).parent_path();
-    }
-    catch (std::exception& e) {
+    } catch (std::exception& e) {
         GIT_SYNC_D_MESSAGE::Error::error("Error getting parent path: " + std::string(e.what()), GIT_SYNC_D_MESSAGE::GENERIC_ERROR);
         return false;
     }
@@ -1019,15 +936,13 @@ bool withinRepo(std::string& path) {
     return false;
 }
 
-
-
 /**
  * @brief Restart the pipe
  *
  * @param pipe The pipe to restart
  * @param io_service The io_service to use
  * @param pipe_name The name of the pipe
-*/
+ */
 #if defined(BOOST_ASIO_HAS_WINDOWS_STREAM_HANDLE)
 void restartPipe(boost::asio::windows::stream_handle& pipe, boost::asio::io_service& io_service, std::string pipe_name)
 {
@@ -1040,12 +955,11 @@ void restartPipe(boost::asio::windows::stream_handle& pipe, boost::asio::io_serv
     // D: DACL, A: Allow, GA: Generic All, S-1-1-0: SID string for "Everyone"
     LPCSTR szSDDL = "D:(A;;GA;;;S-1-1-0)";
     if (!ConvertStringSecurityDescriptorToSecurityDescriptor(
-        szSDDL, SDDL_REVISION_1, &pSDDL, NULL))
-    {
+            szSDDL, SDDL_REVISION_1, &pSDDL, NULL)) {
         GIT_SYNC_D_MESSAGE::Error::error("Error converting string to security descriptor: " + std::to_string(GetLastError()), GIT_SYNC_D_MESSAGE::IPC_NAMED_PIPE_ERROR);
         return;
     }
-    pSD = (SECURITY_DESCRIPTOR*) pSDDL;
+    pSD = (SECURITY_DESCRIPTOR*)pSDDL;
     sa.nLength = sizeof(SECURITY_ATTRIBUTES);
     sa.lpSecurityDescriptor = pSD;
     sa.bInheritHandle = FALSE;
@@ -1056,13 +970,12 @@ void restartPipe(boost::asio::windows::stream_handle& pipe, boost::asio::io_serv
         PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
         PIPE_TYPE_BYTE | PIPE_READMODE_BYTE,
         PIPE_UNLIMITED_INSTANCES, // unlimited instances of this pipe
-        PIPE_BUFFER_SIZE,         // outbound buffer
-        PIPE_BUFFER_SIZE,         // inbound buffer
-        0,                        // use default wait time
-        &sa                       // use default security attributes
+        PIPE_BUFFER_SIZE, // outbound buffer
+        PIPE_BUFFER_SIZE, // inbound buffer
+        0, // use default wait time
+        &sa // use default security attributes
     );
-    if (pipe_handle == INVALID_HANDLE_VALUE)
-    {
+    if (pipe_handle == INVALID_HANDLE_VALUE) {
         GIT_SYNC_D_MESSAGE::Error::error("Error creating named pipe. error: " + std::to_string(GetLastError()), GIT_SYNC_D_MESSAGE::IPC_NAMED_PIPE_ERROR);
         return;
     }

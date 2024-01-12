@@ -4,19 +4,19 @@
 #pragma once
 #ifndef IPC_H
 #define IPC_H
-#include <string>
-#include <vector>
-#include <thread>
+#include <cctype>
 #include <chrono>
-#include <iostream>
+#include <cstdlib>
+#include <cstring>
+#include <filesystem>
 #include <fstream>
+#include <iostream>
+#include <mutex>
 #include <stdio.h>
 #include <stdlib.h>
-#include <cstring>
-#include <cstdlib>
-#include <mutex>
-#include <filesystem>
-#include <cctype>
+#include <string>
+#include <thread>
+#include <vector>
 
 #if defined(UNIT_TESTING)
 // include unit test headers
@@ -29,8 +29,8 @@
 
 #define USE_BOOST_ASIO
 #include <boost/asio.hpp>
-#include <boost/system/error_code.hpp>
 #include <boost/bind/bind.hpp>
+#include <boost/system/error_code.hpp>
 
 #if defined(BOOST_ASIO_HAS_LOCAL_SOCKETS)
 #include <boost/asio/local/stream_protocol.hpp>
@@ -46,13 +46,12 @@
 
 enum COMMAND_CODE {
     COMMAND_ADD_FILE,
-    COMMAND_REMOVE_FILE,
+    COMMAND_REMOVE_SYNC,
     COMMAND_ADD_CREDENTIALS,
     COMMAND_REMOVE_CREDENTIALS,
     COMMAND_ADD_REMOTE_REPO,
     COMMAND_REMOVE_REMOTE_REPO,
     COMMAND_ADD_DIRECTORY,
-    COMMAND_REMOVE_DIRECTORY,
     COMMAND_ADD_REMOTE_REPO_CREDENTIALS,
     COMMAND_REMOVE_REMOTE_REPO_CREDENTIALS,
     COMMAND_TRIGGER_SYNC,
@@ -86,8 +85,8 @@ enum SYNC_TYPE {
     SYNC_TYPE_UNDEFINED = 256
 };
 
-typedef std::pair<int, COMMAND_CODE> command;  // slot, command: slot is used as a way to index which command is related to which data.
-typedef std::pair<int, std::string> data;     // slot, data: slot is used as a way to index which data is related to which command.
+typedef std::pair<int, COMMAND_CODE> command; // slot, command: slot is used as a way to index which command is related to which data.
+typedef std::pair<int, std::string> data; // slot, data: slot is used as a way to index which data is related to which command.
 typedef std::pair<size_t, std::string> response; // size, response: size of response (not including the size value), the original command and slot are concatenated to form the key for the response.
 
 class IPC {
@@ -109,8 +108,8 @@ public:
     static bool shutdown();
     void startRunThread();
     GIT_SYNC_D_MESSAGE::Error error;
-private:
 
+private:
 };
 
 bool parseCommands(
@@ -118,8 +117,7 @@ bool parseCommands(
     std::vector<data>& data_to_parse,
     std::vector<response>& responses_to_send,
     std::mutex& commands_vectors_mutex,
-    std::mutex& responses_vectors_mutex
-);
+    std::mutex& responses_vectors_mutex);
 bool parseKeyValue(std::string& input, std::string& keys, std::string& values);
 bool parseTimeFrame(std::string& input, size_t& time_frame);
 bool withinRepo(std::string& path);
