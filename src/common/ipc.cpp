@@ -32,6 +32,10 @@ bool IPC::pendingCommands()
 
 bool IPC::shutdown()
 {
+    std::unique_lock<std::mutex> lock(this->running_mutex);
+    this->running = false;
+    lock.unlock();
+    IPC::shutdown_trigger = true;
     return shutdown_trigger;
 }
 
@@ -143,6 +147,9 @@ void run(IPC& _this)
     std::vector<std::pair<bool, std::thread>> parseThreads;
 
     while (true) {
+        if (IPC::shutdown_trigger) {
+            _this.shutdown();
+        }
         std::unique_lock<std::mutex> running_mutex_lock(_this.running_mutex);
         if (!_this.running) {
             break;
@@ -736,6 +743,21 @@ bool parseCommands(
         // - Read files
         // - Read directories
         // - Read sync types
+        case COMMAND_KILL_GIT_SYNC_D:
+        {
+            IPC::shutdown_trigger = true;
+            union {
+                char c[4];
+                size_t i;
+            } responseSize;
+            std::string responseStr = "";
+            responseStr = "success:";
+            responseStr += std::to_string(commands_to_parse_local[i].second) + "-" + std::to_string(commands_to_parse_local[i].first);
+            responseSize.i = responseStr.size();
+            responses_to_send_local.push_back(std::make_pair(responseSize.i, responseStr));
+
+            break;
+        }
         default: {
             GIT_SYNC_D_MESSAGE::Error::error("Error parsing command. Unknown command code: " + std::to_string(commands_to_parse_local[i].second), GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
             allCommandsParsed = false;
