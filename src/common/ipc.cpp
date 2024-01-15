@@ -26,7 +26,7 @@ void IPC::startRunThread()
 
 bool IPC::pendingCommands()
 {
-    // check if there are any pending commands
+    // check if there are any pending commands 
     return this->commands_parsed.size() > 0;
 }
 
@@ -105,7 +105,6 @@ void run(IPC& _this)
                 io_service.run(ec);
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
             } });
-
     std::thread respondingThread([&]() {
             while (true) {
                 std::unique_lock<std::mutex> lock(_this.running_mutex);
@@ -115,7 +114,7 @@ void run(IPC& _this)
                 lock.unlock();
                 response response_to_send = std::make_pair(0, "");
                 std::unique_lock<std::mutex> responses_vectors_mutex_lock(_this.responses_vectors_mutex);
-                bool responses_to_send_empty = _this.responses_to_send.size() == 0;
+                bool responses_to_send_empty = (_this.responses_to_send.size() == 0);
                 if (!responses_to_send_empty)
                 {
                     response_to_send = _this.responses_to_send[0];
@@ -141,11 +140,24 @@ void run(IPC& _this)
                 }
                 std::this_thread::sleep_for(std::chrono::milliseconds(50));
             } });
+    std::thread commandParserThread = std::thread([&]() {
+            while (true) {
+                std::unique_lock<std::mutex> lock(_this.running_mutex);
+                if (!_this.running) {
+                    break;
+                }
+                lock.unlock();
+                std::unique_lock<std::mutex> commands_data_vectors_mutex_lock(_this.commands_data_vectors_mutex);
+                bool commands_to_parse_empty = (_this.commands_to_parse.size() == 0);
+                commands_data_vectors_mutex_lock.unlock();
+                if (!commands_to_parse_empty) {
+                    parseCommands(_this.commands_to_parse, _this.data_to_parse, _this.responses_to_send, _this.commands_data_vectors_mutex, _this.responses_vectors_mutex);
+                }
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            } });
 
     size_t sleep_time = 50;
     std::vector<char> buffer_vect1(PIPE_BUFFER_SIZE);
-    std::vector<std::pair<bool, std::thread>> parseThreads;
-
     while (true) {
         if (IPC::shutdown_trigger) {
             _this.shutdown();
@@ -181,7 +193,7 @@ void run(IPC& _this)
                         if (bytes_transferred > 0)
                             GIT_SYNC_D_MESSAGE::Error::error("Read " + std::to_string(bytes_transferred) + " bytes from named pipe.\nBuffer size: " + std::to_string(buffer.size()) + "\nMessage: " + buffer, GIT_SYNC_D_MESSAGE::GENERIC_INFO);
                         // parse the buffer
-                        // the buffer is in the format: startPattern, totalLength, dataLenth, slot, command, data, endPattern
+                        // the buffer is in the format: startPattern, totalLength, dataLength, slot, command, data, endPattern
                         // startPattern is a string of 8 bytes: START_PATTERN_STRING
                         // endPattern is a string of 8 bytes: END_PATTERN_STRING
                         // totalLength is a 4 byte integer (not including startPattern and endPattern)
@@ -193,70 +205,72 @@ void run(IPC& _this)
                         // union to convert from char array to int
 
                         union {
-                            char c[4];
-                            int i;
+                            char c[sizeof(unsigned int)];
+                            unsigned int i;
                         } slot;
                         union {
-                            char c[4];
-                            int i;
+                            char c[sizeof(unsigned int)];
+                            unsigned int i;
                         } dataLength;
                         union {
-                            char c[4];
-                            int i;
+                            char c[sizeof(unsigned int)];
+                            unsigned int i;
                         } totalLength;
                         union {
-                            char c[4];
+                            char c[sizeof(unsigned int)];
                             COMMAND_CODE i;
                         } commandCode;
 
                         size_t bufferIndex = 0;
                         while (bufferIndex < buffer.size())
                         {
-                            if (bufferIndex + 8 < buffer.size())
+                            size_t startPatternSize = std::string(START_PATTERN_STRING).size();
+                            if (bufferIndex + startPatternSize < buffer.size())
                             {
-                                std::string startPattern = buffer.substr(bufferIndex, 8);
+                                std::string startPattern = buffer.substr(bufferIndex, startPatternSize);
                                 if (startPattern != std::string(START_PATTERN_STRING))
                                 {
                                     bufferIndex++;
                                     continue;
                                 }
-                                bufferIndex += 8;
+                                bufferIndex += startPatternSize;
                             } else
                             {
                                 break;
                             }
                             // get the total length
-                            if (bufferIndex + 4 < buffer.size())
+                            if (bufferIndex + sizeof(unsigned int) < buffer.size())
                             {
-                                std::string totalLengthStr(buffer.begin() + bufferIndex, buffer.begin() + bufferIndex + 4);
-                                memcpy(totalLength.c, totalLengthStr.c_str(), 4);
-                                bufferIndex += 4;
+                                std::string totalLengthStr(buffer.begin() + bufferIndex, buffer.begin() + bufferIndex + sizeof(unsigned int));
+                                memcpy(totalLength.c, totalLengthStr.c_str(), sizeof(unsigned int));
+                                bufferIndex += sizeof(unsigned int);
                             } else
                             {
                                 break;
                             }
                             // check to make sure that the buffer is at least as big as bufferIndex + totalLength - 8 - 4 (subtract 8 for startPattern and 4 for totalLength since bufferIndex was increased by 8 and 4 respectively)
-                            if (bufferIndex + totalLength.i - 8 - 4 > buffer.size())
+                            if (bufferIndex + totalLength.i - startPatternSize - sizeof(unsigned int) > buffer.size())
                             {
                                 break;
                             }
                             // get the data length
-                            std::string dataLengthStr(buffer.begin() + bufferIndex, buffer.begin() + bufferIndex + 4);
-                            memcpy(dataLength.c, dataLengthStr.c_str(), 4);
-                            bufferIndex += 4;
+                            std::string dataLengthStr(buffer.begin() + bufferIndex, buffer.begin() + bufferIndex + sizeof(unsigned int));
+                            memcpy(dataLength.c, dataLengthStr.c_str(), sizeof(unsigned int));
+                            bufferIndex += sizeof(unsigned int);
                             // get the slot
-                            std::string slotStr(buffer.begin() + bufferIndex, buffer.begin() + bufferIndex + 4);
-                            memcpy(slot.c, slotStr.c_str(), 4);
-                            bufferIndex += 4;
+                            std::string slotStr(buffer.begin() + bufferIndex, buffer.begin() + bufferIndex + sizeof(unsigned int));
+                            memcpy(slot.c, slotStr.c_str(), sizeof(unsigned int));
+                            bufferIndex += sizeof(unsigned int);
                             // get the command
-                            std::string commandStr(buffer.begin() + bufferIndex, buffer.begin() + bufferIndex + 4);
-                            memcpy(commandCode.c, commandStr.c_str(), 4);
-                            bufferIndex += 4;
+                            std::string commandStr(buffer.begin() + bufferIndex, buffer.begin() + bufferIndex + sizeof(unsigned int));
+                            memcpy(commandCode.c, commandStr.c_str(), sizeof(unsigned int));
+                            bufferIndex += sizeof(unsigned int);
                             // get the data
                             std::string dataStr(buffer.begin() + bufferIndex, buffer.begin() + bufferIndex + dataLength.i);
                             bufferIndex += dataLength.i;
                             // get the end pattern
-                            std::string endPattern(buffer.begin() + bufferIndex, buffer.begin() + bufferIndex + 8);
+                            size_t endPatternSize = std::string(END_PATTERN_STRING).size();
+                            std::string endPattern(buffer.begin() + bufferIndex, buffer.begin() + bufferIndex + endPatternSize);
                             if (endPattern != std::string(END_PATTERN_STRING))
                             {
                                 break;
@@ -281,33 +295,6 @@ void run(IPC& _this)
                     } });
         } else {
             GIT_SYNC_D_MESSAGE::Error::error("Pipe is not open", GIT_SYNC_D_MESSAGE::GENERIC_INFO);
-        }
-
-        std::unique_lock<std::mutex> commands_data_vectors_mutex_lock(_this.commands_data_vectors_mutex);
-        std::unique_lock<std::mutex> responses_vectors_mutex_lock(_this.responses_vectors_mutex);
-        // check if there are any commands to parse
-        if (_this.commands_to_parse.size() > 0 && _this.data_to_parse.size() > 0) {
-            size_t parseThreadsSize = parseThreads.size();
-            parseThreads.push_back(std::make_pair(false, std::thread([&, parseThreadsSize]() {
-                if (!parseCommands(_this.commands_to_parse, _this.data_to_parse, _this.responses_to_send, _this.commands_data_vectors_mutex, _this.responses_vectors_mutex))
-                {
-                    GIT_SYNC_D_MESSAGE::Error::error("Error parsing commands", GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
-                }
-                parseThreads[parseThreadsSize].first = true; })));
-        }
-        // unlock the mutexes
-        if (responses_vectors_mutex_lock.owns_lock())
-            responses_vectors_mutex_lock.unlock();
-        if (commands_data_vectors_mutex_lock.owns_lock())
-            commands_data_vectors_mutex_lock.unlock();
-
-        // check if any of the parse threads are done
-        for (size_t i = 0; i < parseThreads.size(); i++) {
-            if (parseThreads[i].first) {
-                parseThreads[i].second.join();
-                parseThreads.erase(parseThreads.begin() + i);
-                i--;
-            }
         }
 
         // sleep for a bit
@@ -348,8 +335,8 @@ bool parseCommands(
     data_to_parse.clear();
     commands_data_vectors_mutex_lock.unlock();
 
-    if (commands_to_parse_local.size() == 0 || data_to_parse_local.size() == 0 || commands_to_parse_local.size() != data_to_parse_local.size()) {
-        return false;
+    if (commands_to_parse_local.size() == 0) {
+        return true;
     }
 
     for (size_t i = 0; i < commands_to_parse_local.size(); i++) {
@@ -361,7 +348,7 @@ bool parseCommands(
         // - Trigger add file
         switch (commands_to_parse_local[i].second) {
         case COMMAND_ADD_FILE: {
-            std::string data;
+            std::string data = "";
             // first check the corresponding index in data_to_parse_local to see if the slots match
             if (data_to_parse_local[i].first == commands_to_parse_local[i].first) {
                 data = data_to_parse_local[i].second;
@@ -372,6 +359,11 @@ bool parseCommands(
                         break;
                     }
                 }
+            }
+            if(data == "") {
+                GIT_SYNC_D_MESSAGE::Error::error("No data for addFile command.", GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
+                allCommandsParsed = false;
+                break;
             }
             // parse data
             // this will be in the format: key:value\nkey:value\nkey:value\n etc...
@@ -488,21 +480,16 @@ bool parseCommands(
 
             // TODO: add file -- The following call should return an int that corresponds to something like: 0 = success, 1 = error, 2 = already exists, 3 = exists in synced folder, etc...
             // MainLogic::addFile(filePath, destDirectoryPath, destRepository, credential, localRepository, syncType_un.i, syncTime_seconds);
-            union {
-                char c[4];
-                size_t i;
-            } responseSize;
             std::string responseStr = "";
             int returnValue = 0; // = MainLogic::addFile(filePath, destDirectoryPath, destRepository, credential, localRepository, syncType_un.i, syncTime_seconds);
             responseStr = "code:" + std::to_string(returnValue) + ":" + std::to_string(commands_to_parse_local[i].second) + "-" + std::to_string(commands_to_parse_local[i].first);
-            responseSize.i = responseStr.size();
-            responses_to_send_local.push_back(std::make_pair(responseSize.i, responseStr));
+            responses_to_send_local.push_back(std::make_pair(responseStr.size(), responseStr));
             break;
         }
         // - Trigger remove file
         case COMMAND_REMOVE_SYNC: // TODO: change to COMMAND_REMOVE_SYNC that can act on files or folders and verify that existing code works for both
         {
-            std::string data;
+            std::string data = "";
             // first check the corresponding index in data_to_parse_local to see if the slots match
             if (data_to_parse_local[i].first == commands_to_parse_local[i].first) {
                 data = data_to_parse_local[i].second;
@@ -513,6 +500,11 @@ bool parseCommands(
                         break;
                     }
                 }
+            }
+            if(data == "") {
+                GIT_SYNC_D_MESSAGE::Error::error("No data for removeFile command.", GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
+                allCommandsParsed = false;
+                break;
             }
             // parse data
             // this will be in the format: key:value
@@ -564,20 +556,15 @@ bool parseCommands(
 
             // TODO: remove file
             // MainLogic::removeSync(filePath); // returns an int that corresponds to something like: 0 = success, 1 = error, 2 = path not being synced, etc...
-            union {
-                char c[4];
-                size_t i;
-            } responseSize;
             std::string responseStr = "";
             int returnValue = 0; // = MainLogic::removeSync(filePath);
             responseStr = "code:" + std::to_string(returnValue) + ":" + std::to_string(commands_to_parse_local[i].second) + "-" + std::to_string(commands_to_parse_local[i].first);
-            responseSize.i = responseStr.size();
-            responses_to_send_local.push_back(std::make_pair(responseSize.i, responseStr));
+            responses_to_send_local.push_back(std::make_pair(responseStr.size(), responseStr));
             break;
         }
         // - Trigger add directory
         case COMMAND_ADD_DIRECTORY: {
-            std::string data;
+            std::string data = "";
             // first check the corresponding index in data_to_parse_local to see if the slots match
             if (data_to_parse_local[i].first == commands_to_parse_local[i].first) {
                 data = data_to_parse_local[i].second;
@@ -588,6 +575,11 @@ bool parseCommands(
                         break;
                     }
                 }
+            }
+            if(data == "") {
+                GIT_SYNC_D_MESSAGE::Error::error("No data for addDirectory command.", GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
+                allCommandsParsed = false;
+                break;
             }
             // parse data
             // this will be in the format: key:value\nkey:value\nkey:value\n etc...
@@ -707,10 +699,6 @@ bool parseCommands(
 
             // TODO: add directory
             // MainLogic::addDirectory(directoryPath, destDirectoryPath, destRepository, credential, localRepository, syncTime_seconds);
-            union {
-                char c[4];
-                size_t i;
-            } responseSize;
             std::string responseStr = "";
             if (/*the commented call above succeeds*/ true) {
                 responseStr = "success:";
@@ -718,8 +706,7 @@ bool parseCommands(
                 responseStr = "error:";
             }
             responseStr += std::to_string(commands_to_parse_local[i].second) + "-" + std::to_string(commands_to_parse_local[i].first);
-            responseSize.i = responseStr.size();
-            responses_to_send_local.push_back(std::make_pair(responseSize.i, responseStr));
+            responses_to_send_local.push_back(std::make_pair(responseStr.size(), responseStr));
             break;
         }
         // - Trigger remove directory
@@ -745,17 +732,11 @@ bool parseCommands(
         // - Read sync types
         case COMMAND_KILL_GIT_SYNC_D:
         {
-            IPC::shutdown_trigger = true;
-            union {
-                char c[4];
-                size_t i;
-            } responseSize;
             std::string responseStr = "";
             responseStr = "success:";
             responseStr += std::to_string(commands_to_parse_local[i].second) + "-" + std::to_string(commands_to_parse_local[i].first);
-            responseSize.i = responseStr.size();
-            responses_to_send_local.push_back(std::make_pair(responseSize.i, responseStr));
-
+            responses_to_send_local.push_back(std::make_pair(responseStr.size(), responseStr));
+            IPC::shutdown_trigger = true;
             break;
         }
         default: {

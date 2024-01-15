@@ -44,7 +44,7 @@
 #include <Sddl.h>
 #endif
 
-enum COMMAND_CODE {
+enum COMMAND_CODE : unsigned int {
     COMMAND_ADD_FILE,
     COMMAND_REMOVE_SYNC,
     COMMAND_ADD_CREDENTIALS,
@@ -68,7 +68,7 @@ enum COMMAND_CODE {
     COMMAND_KILL_GIT_SYNC_D,
 };
 
-enum RESPONSE_CODE {
+enum RESPONSE_CODE : unsigned int {
     RESP_SUCCESS,
     RESP_ERROR,
     RESP_UNKNOWN,
@@ -77,7 +77,7 @@ enum RESPONSE_CODE {
     RESP_INVALID_DATA
 };
 
-enum SYNC_TYPE {
+enum SYNC_TYPE : unsigned int {
     SYNC_TYPE_ALL = 0,
     SYNC_TYPE_REPO = 1,
     SYNC_TYPE_TIME_FRAME = 2,
@@ -86,8 +86,8 @@ enum SYNC_TYPE {
     SYNC_TYPE_UNDEFINED = 256
 };
 
-typedef std::pair<int, COMMAND_CODE> command; // slot, command: slot is used as a way to index which command is related to which data.
-typedef std::pair<int, std::string> data; // slot, data: slot is used as a way to index which data is related to which command.
+typedef std::pair<unsigned int , COMMAND_CODE> command; // slot, command: slot is used as a way to index which command is related to which data.
+typedef std::pair<unsigned int , std::string> data; // slot, data: slot is used as a way to index which data is related to which command.
 typedef std::pair<size_t, std::string> response; // size, response: size of response (not including the size value), the original command and slot are concatenated to form the key for the response.
 
 class IPC {
@@ -129,9 +129,5 @@ void restartPipe(boost::asio::windows::stream_handle& pipe, boost::asio::io_serv
 #elif defined(BOOST_ASIO_HAS_LOCAL_SOCKETS)
 void restartPipe(boost::asio::local::stream_protocol::socket& pipe, boost::asio::io_service& io_service, std::string pipe_name);
 #endif
-
-std::string convertStringWithUnreadableCharacters(std::string& input);
-std::string to_hex(unsigned int value);
-std::string fixStringFromPipe(std::string& input);
 
 #endif // IPC_H
