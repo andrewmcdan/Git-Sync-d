@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 project(Git-Sync-d)
 
+include(CTest)
+
 set(CMAKE_CXX_STANDARD 17)
 
 set(Boost_USE_STATIC_LIBS OFF) 
@@ -132,3 +134,22 @@ if(WIN32)
   add_dependencies(Git-Sync-d Windows-Event-mc-build)
 ENDIF()
 
+
+if(BUILD_TESTING)
+  include(FetchContent)
+  FetchContent_Declare(
+    Catch2
+    GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+    GIT_TAG v3.4.0
+  )
+  FetchContent_MakeAvailable(Catch2)
+  file(GLOB TEST_SOURCES "tests/*.cpp")
+  add_executable(GitSyncTests ${TEST_SOURCES} src/common/git.cpp src/common/ipc.cpp src/common/db.cpp src/common/error.cpp)
+  target_compile_definitions(GitSyncTests PRIVATE UNIT_TESTING)
+  target_include_directories(GitSyncTests PRIVATE src/common)
+  if(Boost_FOUND)
+    target_link_libraries(GitSyncTests PRIVATE ${Boost_LIBRARIES})
+  endif()
+  target_link_libraries(GitSyncTests PRIVATE Catch2::Catch2WithMain SQLite::SQLite3)
+  add_test(NAME GitSyncTests COMMAND GitSyncTests)
+endif()
