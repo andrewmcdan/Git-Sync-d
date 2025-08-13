@@ -1,4 +1,5 @@
 #include "ipc.h"
+#include "git.h"
 
 bool IPC::shutdown_trigger = false;
 
@@ -461,7 +462,7 @@ bool parseCommands(
 
             if (syncType_un.i & SYNC_TYPE_REPO) {
                 // check that the folder exists within a repo
-                if (!withinRepo(filePath) && localRepository == "") {
+                if (!GitUtils::isRepository(filePath) && localRepository == "") {
                     GIT_SYNC_D_MESSAGE::Error::error("Error parsing data for addFile command. Source file is not within a repository.", GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
                     allCommandsParsed = false;
                     continue;
@@ -680,7 +681,7 @@ bool parseCommands(
 
             if (syncType_un.i & SYNC_TYPE_REPO) {
                 // check that the folder exists within a repo
-                if (!withinRepo(directoryPath) && localRepository == "") {
+                if (!GitUtils::isRepository(directoryPath) && localRepository == "") {
                     GIT_SYNC_D_MESSAGE::Error::error("Error parsing data for addDirectory command. Source directory is not within a repository.", GIT_SYNC_D_MESSAGE::IPC_MESSAGE_PARSE_ERROR);
                     allCommandsParsed = false;
                     continue;
@@ -906,39 +907,6 @@ bool parseTimeFrame(std::string& _input, size_t& time_frame)
  * @return true If the path is within a repository
  * @return false If the path is not within a repository
  */
-bool withinRepo(std::string& path)
-{
-    if (path == "") {
-        return false;
-    }
-
-    std::filesystem::path pathObj(path);
-
-    if (std::filesystem::exists(pathObj / ".git")) {
-        return true;
-    }
-
-    if (pathObj == pathObj.root_path()) {
-        return false;
-    }
-
-    // get the parent path and check each folder in that path to see if it is a repo
-    std::filesystem::path parentPath;
-    try {
-        parentPath = std::filesystem::path(path).parent_path();
-    } catch (std::exception& e) {
-        GIT_SYNC_D_MESSAGE::Error::error("Error getting parent path: " + std::string(e.what()), GIT_SYNC_D_MESSAGE::GENERIC_ERROR);
-        return false;
-    }
-    while (parentPath != parentPath.root_path()) {
-        if (std::filesystem::exists(parentPath / ".git")) {
-            return true;
-        }
-        parentPath = parentPath.parent_path();
-    }
-    return false;
-}
-
 /**
  * @brief Restart the pipe
  *
@@ -989,7 +957,7 @@ void restartPipe(boost::asio::local::stream_protocol::socket& pipe, boost::asio:
 {
     // Create a local stream protocol socket.
     boost::asio::local::stream_protocol::endpoint ep(pipe_name);
-    pipe(io_service);
+    pipe = boost::asio::local::stream_protocol::socket(io_service);
     boost::asio::local::stream_protocol::acceptor acceptor(io_service, ep);
     acceptor.accept(pipe);
 }
