@@ -1,5 +1,6 @@
 #include "ipc.h"
 #include "git.h"
+#include "db.h"
 
 bool IPC::shutdown_trigger = false;
 
@@ -340,6 +341,8 @@ bool parseCommands(
         return true;
     }
 
+    DB::initDB();
+
     for (size_t i = 0; i < commands_to_parse_local.size(); i++) {
         // parse the command
         // the command is in the format: slot, command
@@ -479,10 +482,15 @@ bool parseCommands(
                 }
             }
 
-            // TODO: add file -- The following call should return an int that corresponds to something like: 0 = success, 1 = error, 2 = already exists, 3 = exists in synced folder, etc...
-            // MainLogic::addFile(filePath, destDirectoryPath, destRepository, credential, localRepository, syncType_un.i, syncTime_seconds);
+            std::string options =
+                "destDir=" + destDirectoryPath +
+                ";credential=" + credential +
+                ";localRepo=" + localRepository +
+                ";syncType=" + std::to_string(syncType_un.i) +
+                ";syncTime=" + std::to_string(syncTime_seconds);
+            bool dbOk = DB::addSyncEntry(filePath, destRepository, options);
             std::string responseStr = "";
-            int returnValue = 0; // = MainLogic::addFile(filePath, destDirectoryPath, destRepository, credential, localRepository, syncType_un.i, syncTime_seconds);
+            int returnValue = dbOk ? 0 : 1;
             responseStr = "code:" + std::to_string(returnValue) + ":" + std::to_string(commands_to_parse_local[i].second) + "-" + std::to_string(commands_to_parse_local[i].first);
             responses_to_send_local.push_back(std::make_pair(responseStr.size(), responseStr));
             break;
@@ -555,11 +563,15 @@ bool parseCommands(
                 continue;
             }
 
-            // TODO: remove file
-            // MainLogic::removeSync(filePath); // returns an int that corresponds to something like: 0 = success, 1 = error, 2 = path not being synced, etc...
-            std::string responseStr = "";
-            int returnValue = 0; // = MainLogic::removeSync(filePath);
-            responseStr = "code:" + std::to_string(returnValue) + ":" + std::to_string(commands_to_parse_local[i].second) + "-" + std::to_string(commands_to_parse_local[i].first);
+            int returnValue = 1;
+            auto entries = DB::listSyncEntries();
+            for (const auto &e : entries) {
+                if (e.filePath == filePath) {
+                    returnValue = DB::removeSyncEntry(e.id) ? 0 : 1;
+                    break;
+                }
+            }
+            std::string responseStr = "code:" + std::to_string(returnValue) + ":" + std::to_string(commands_to_parse_local[i].second) + "-" + std::to_string(commands_to_parse_local[i].first);
             responses_to_send_local.push_back(std::make_pair(responseStr.size(), responseStr));
             break;
         }
@@ -698,14 +710,14 @@ bool parseCommands(
                 }
             }
 
-            // TODO: add directory
-            // MainLogic::addDirectory(directoryPath, destDirectoryPath, destRepository, credential, localRepository, syncTime_seconds);
-            std::string responseStr = "";
-            if (/*the commented call above succeeds*/ true) {
-                responseStr = "success:";
-            } else {
-                responseStr = "error:";
-            }
+            std::string options =
+                "destDir=" + destDirectoryPath +
+                ";credential=" + credential +
+                ";localRepo=" + localRepository +
+                ";syncType=" + std::to_string(syncType_un.i) +
+                ";syncTime=" + std::to_string(syncTime_seconds);
+            bool ok = DB::addSyncEntry(directoryPath, destRepository, options);
+            std::string responseStr = ok ? "success:" : "error:";
             responseStr += std::to_string(commands_to_parse_local[i].second) + "-" + std::to_string(commands_to_parse_local[i].first);
             responses_to_send_local.push_back(std::make_pair(responseStr.size(), responseStr));
             break;

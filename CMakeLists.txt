@@ -64,6 +64,13 @@ endif()
 
 add_executable(Git-Sync-d main.cpp ${SOURCES})
 
+# Link against SQLite3
+find_package(SQLite3 REQUIRED)
+if(SQLite3_FOUND)
+  include_directories(${SQLite3_INCLUDE_DIRS})
+  target_link_libraries(Git-Sync-d PRIVATE SQLite::SQLite3)
+endif()
+
 
 if(WIN32)
   find_program(MC_EXE mc.exe PATHS [ 
