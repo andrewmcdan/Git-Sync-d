@@ -22,13 +22,16 @@ std::string getLastCommitMessage(const std::string &repoRoot,
                                 int maxLen = 0);
 
 // Stage `filePath` in the repository located at `repoRoot`.
-bool stageFile(const std::string &repoRoot, const std::string &filePath);
+// Returns the Git CLI exit code.
+int stageFile(const std::string &repoRoot, const std::string &filePath);
 
 // Commit staged changes in `repoRoot` using `message`.
-bool commit(const std::string &repoRoot, const std::string &message);
+// Returns the Git CLI exit code.
+int commit(const std::string &repoRoot, const std::string &message);
 
-// Push committed changes from `repoRoot` to its configured remote.
-bool push(const std::string &repoRoot);
+// Push committed changes from `repoRoot` to `remoteName`.
+// Returns the Git CLI exit code.
+int push(const std::string &repoRoot, const std::string &remoteName);
 
 } // namespace GitUtils
 
