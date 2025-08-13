@@ -5,6 +5,28 @@ namespace Windows_Service
 {
     std::function<void(std::string, GIT_SYNC_D_MESSAGE::_ErrorCode)> sysLogEvent = nullptr;
 
+    namespace
+    {
+        BOOL WINAPI ConsoleHandler(DWORD signal)
+        {
+            switch (signal)
+            {
+            case CTRL_C_EVENT:
+            case CTRL_BREAK_EVENT:
+            case CTRL_CLOSE_EVENT:
+            case CTRL_SHUTDOWN_EVENT:
+                if (sysLogEvent)
+                {
+                    sysLogEvent("Received shutdown signal", GIT_SYNC_D_MESSAGE::_ErrorCode::GENERIC_INFO);
+                }
+                MainLogic_H::stop();
+                return TRUE;
+            default:
+                return FALSE;
+            }
+        }
+    }
+
     bool IsAdmin()
     {
         BOOL isAdmin = FALSE;
@@ -54,26 +76,33 @@ namespace Windows_Service
     void StartWindowsService(int startCode, int argc, char **argv, std::function<void(std::string, GIT_SYNC_D_MESSAGE::_ErrorCode)> _logEvent)
     {
         sysLogEvent = _logEvent;
-        switch(startCode){
-            case 1:
-                {
-                    if (!IsAdmin())
-                    {
-                        GIT_SYNC_D_MESSAGE::Error::error("Git Sync'd is not running as admin. Restarting as admin.", GIT_SYNC_D_MESSAGE::_ErrorCode::GENERIC_INFO);
-                        RestartAsAdmin(argc, argv);
-                        return;
-                    }
-                }
-                break;
-            case 2:
-                MainLogic_H::loop();
-                break;
-            case 3:
-                break;
-            case 4:
-                break;
-            default:
-                break;
+        switch (startCode)
+        {
+        case 1:
+        {
+            if (!IsAdmin())
+            {
+                GIT_SYNC_D_MESSAGE::Error::error("Git Sync'd is not running as admin. Restarting as admin.",
+                                                 GIT_SYNC_D_MESSAGE::_ErrorCode::GENERIC_INFO);
+                RestartAsAdmin(argc, argv);
+                return;
+            }
+        }
+        break;
+        case 2:
+            SetConsoleCtrlHandler(ConsoleHandler, TRUE);
+            while (MainLogic_H::loop())
+            {
+                Sleep(200);
+            }
+            break;
+        case 3:
+            break;
+        case 4:
+            MainLogic_H::stop();
+            break;
+        default:
+            break;
         }
     }
 }
