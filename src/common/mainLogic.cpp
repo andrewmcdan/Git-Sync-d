@@ -1,4 +1,7 @@
 #include "mainLogic.h"
+#include <filesystem>
+#include <unordered_map>
+#include <chrono>
 
 namespace MainLogic_H
 {
@@ -7,22 +10,76 @@ namespace MainLogic_H
 
     bool loop()
     {
+        static std::unordered_map<int, std::filesystem::file_time_type> lastWrite;
+        static std::unordered_map<int, std::string> lastCommit;
+
         // this is the main service loop.
         // it will be called by the service/daemon
         // and will run until the service/daemon is stopped.
         while (mainLogic.isRunning())
         {
-            // do all the things
-            // 1. check that IPC is active / for new messages
-
-            // 2. check if we have loaded the database
-
-            // 3. check if we have loaded the credentials
-
+            // Fetch the list of paths we need to watch from the database.
+            auto entries = DB::listSyncEntries();
+            for (const auto &entry : entries)
+            {
+                std::filesystem::path src(entry.filePath);
+                std::filesystem::path dstRepo(entry.repoPath);
+                bool repoMode = entry.options.find("repo") != std::string::npos;
+                std::string srcRepo = GitUtils::findRepoRoot(src);
+                try
+                {
+                    if (repoMode && !srcRepo.empty())
+                    {
+                        std::string msg =
+                            GitUtils::getLastCommitMessage(srcRepo, src.string());
+                        if (!msg.empty() && lastCommit[entry.id] != msg)
+                        {
+                            lastCommit[entry.id] = msg;
+                            std::filesystem::copy_file(
+                                src, dstRepo / src.filename(),
+                                std::filesystem::copy_options::overwrite_existing);
+                            GitUtils::stageFile(dstRepo.string(),
+                                                 (dstRepo / src.filename()).string());
+                            GitUtils::commit(dstRepo.string(), msg);
+                            GitUtils::push(dstRepo.string());
+                        }
+                    }
+                    else
+                    {
+                        auto current = std::filesystem::last_write_time(src);
+                        if (lastWrite[entry.id] != current)
+                        {
+                            lastWrite[entry.id] = current;
+                            std::string msg;
+                            if (!srcRepo.empty())
+                            {
+                                msg = GitUtils::getLastCommitMessage(srcRepo,
+                                                                     src.string());
+                            }
+                            if (msg.empty())
+                            {
+                                msg = "Auto-sync";
+                            }
+                            std::filesystem::copy_file(
+                                src, dstRepo / src.filename(),
+                                std::filesystem::copy_options::overwrite_existing);
+                            GitUtils::stageFile(dstRepo.string(),
+                                                 (dstRepo / src.filename()).string());
+                            GitUtils::commit(dstRepo.string(), msg);
+                            GitUtils::push(dstRepo.string());
+                        }
+                    }
+                }
+                catch (const std::filesystem::filesystem_error &e)
+                {
+                    GIT_SYNC_D_MESSAGE::Error::error(
+                        e.what(), GIT_SYNC_D_MESSAGE::_ErrorCode::GENERIC_ERROR);
+                }
+            }
 
             // check to see if we have we received a shutdown command
-            if (!mainLogic.ipc->running) {
-                
+            if (!mainLogic.ipc->running)
+            {
             }
             if (IPC::shutdown_trigger)
             {

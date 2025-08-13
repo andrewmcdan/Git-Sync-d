@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cstdio>
+#include <cstdlib>
 
 #ifdef _WIN32
 #define popen _popen
@@ -61,6 +62,25 @@ std::string getLastCommitMessage(const std::string &repoRoot,
         result = result.substr(0, maxLen);
     }
     return result;
+}
+
+static bool runCommand(const std::string &command) {
+    return std::system(command.c_str()) == 0;
+}
+
+bool stageFile(const std::string &repoRoot, const std::string &filePath) {
+    std::string cmd = "git -C \"" + repoRoot + "\" add \"" + filePath + "\"";
+    return runCommand(cmd);
+}
+
+bool commit(const std::string &repoRoot, const std::string &message) {
+    std::string cmd = "git -C \"" + repoRoot + "\" commit -m \"" + message + "\"";
+    return runCommand(cmd);
+}
+
+bool push(const std::string &repoRoot) {
+    std::string cmd = "git -C \"" + repoRoot + "\" push";
+    return runCommand(cmd);
 }
 
 } // namespace GitUtils

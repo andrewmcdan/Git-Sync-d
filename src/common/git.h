@@ -21,6 +21,15 @@ std::string getLastCommitMessage(const std::string &repoRoot,
                                 const std::string &filePath = "",
                                 int maxLen = 0);
 
+// Stage `filePath` in the repository located at `repoRoot`.
+bool stageFile(const std::string &repoRoot, const std::string &filePath);
+
+// Commit staged changes in `repoRoot` using `message`.
+bool commit(const std::string &repoRoot, const std::string &message);
+
+// Push committed changes from `repoRoot` to its configured remote.
+bool push(const std::string &repoRoot);
+
 } // namespace GitUtils
 
 #endif // GIT_SYNC_D_GIT_H
