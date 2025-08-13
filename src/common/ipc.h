@@ -121,7 +121,6 @@ bool parseCommands(
     std::mutex& responses_vectors_mutex);
 bool parseKeyValue(std::string& input, std::string& keys, std::string& values);
 bool parseTimeFrame(std::string& input, size_t& time_frame);
-bool withinRepo(std::string& path);
 void run(IPC&);
 
 #if defined(BOOST_ASIO_HAS_WINDOWS_STREAM_HANDLE)
