@@ -71,6 +71,11 @@ if(SQLite3_FOUND)
   target_link_libraries(Git-Sync-d PRIVATE SQLite::SQLite3)
 endif()
 
+find_library(CRYPTOPP_LIBRARY cryptopp)
+if(CRYPTOPP_LIBRARY)
+  target_link_libraries(Git-Sync-d PRIVATE ${CRYPTOPP_LIBRARY})
+endif()
+
 
 if(WIN32)
   find_program(MC_EXE mc.exe PATHS [ 
