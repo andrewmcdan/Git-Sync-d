@@ -2,16 +2,28 @@
 #include <filesystem>
 #include <unordered_map>
 #include <chrono>
+#include <atomic>
 
 namespace MainLogic_H
 {
     GIT_SYNC_D_MESSAGE::Error globalErrors(1000);
     MainLogic mainLogic;
+    // Flag indicating that the list of watched files/directories has been
+    // modified and the internal caches should be refreshed.
+    static std::atomic<bool> restartWatchers{false};
 
     bool loop()
     {
         static std::unordered_map<int, std::filesystem::file_time_type> lastWrite;
         static std::unordered_map<int, std::string> lastCommit;
+
+        if (restartWatchers.load())
+        {
+            // Clearing these maps effectively resets our file watching state.
+            lastWrite.clear();
+            lastCommit.clear();
+            restartWatchers = false;
+        }
 
         // this is the main service loop.
         // it will be called by the service/daemon
@@ -170,6 +182,48 @@ namespace MainLogic_H
         mainLogic.stopped = true;
         // sysLogEvent("Git Sync'd has stopped", GIT_SYNC_D_MESSAGE::_ErrorCode::GENERIC_INFO);
         GIT_SYNC_D_MESSAGE::Error::error("Git Sync'd has stopped", GIT_SYNC_D_MESSAGE::_ErrorCode::GENERIC_INFO);
+    }
+
+    // ---- Synchronisation management helpers ---------------------------------
+
+    bool addFile(const std::string &filePath,
+                 const std::string &repoPath,
+                 const std::string &options)
+    {
+        bool ok = DB::addSyncEntry(filePath, repoPath, options);
+        if (ok)
+        {
+            restartWatchers = true;
+        }
+        return ok;
+    }
+
+    bool addDirectory(const std::string &dirPath,
+                      const std::string &repoPath,
+                      const std::string &options)
+    {
+        bool ok = DB::addSyncEntry(dirPath, repoPath, options);
+        if (ok)
+        {
+            restartWatchers = true;
+        }
+        return ok;
+    }
+
+    bool removeSync(const std::string &path)
+    {
+        auto entries = DB::listSyncEntries();
+        for (const auto &e : entries)
+        {
+            if (e.filePath == path)
+            {
+                bool ok = DB::removeSyncEntry(e.id);
+                if (ok)
+                    restartWatchers = true;
+                return ok;
+            }
+        }
+        return false;
     }
 
 } // namespace MainLogic_H

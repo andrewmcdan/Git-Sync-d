@@ -1,6 +1,7 @@
 #include "ipc.h"
 #include "git.h"
 #include "db.h"
+#include "mainLogic.h"
 
 bool IPC::shutdown_trigger = false;
 
@@ -488,10 +489,11 @@ bool parseCommands(
                 ";localRepo=" + localRepository +
                 ";syncType=" + std::to_string(syncType_un.i) +
                 ";syncTime=" + std::to_string(syncTime_seconds);
-            bool dbOk = DB::addSyncEntry(filePath, destRepository, options);
-            std::string responseStr = "";
-            int returnValue = dbOk ? 0 : 1;
-            responseStr = "code:" + std::to_string(returnValue) + ":" + std::to_string(commands_to_parse_local[i].second) + "-" + std::to_string(commands_to_parse_local[i].first);
+            bool ok = MainLogic_H::addFile(filePath, destRepository, options);
+            unsigned int code = ok ? RESP_SUCCESS : RESP_ERROR;
+            std::string responseStr = "code:" + std::to_string(code) + ":" +
+                                      std::to_string(commands_to_parse_local[i].second) + "-" +
+                                      std::to_string(commands_to_parse_local[i].first);
             responses_to_send_local.push_back(std::make_pair(responseStr.size(), responseStr));
             break;
         }
@@ -563,15 +565,11 @@ bool parseCommands(
                 continue;
             }
 
-            int returnValue = 1;
-            auto entries = DB::listSyncEntries();
-            for (const auto &e : entries) {
-                if (e.filePath == filePath) {
-                    returnValue = DB::removeSyncEntry(e.id) ? 0 : 1;
-                    break;
-                }
-            }
-            std::string responseStr = "code:" + std::to_string(returnValue) + ":" + std::to_string(commands_to_parse_local[i].second) + "-" + std::to_string(commands_to_parse_local[i].first);
+            bool ok = MainLogic_H::removeSync(filePath);
+            unsigned int code = ok ? RESP_SUCCESS : RESP_ERROR;
+            std::string responseStr = "code:" + std::to_string(code) + ":" +
+                                      std::to_string(commands_to_parse_local[i].second) + "-" +
+                                      std::to_string(commands_to_parse_local[i].first);
             responses_to_send_local.push_back(std::make_pair(responseStr.size(), responseStr));
             break;
         }
@@ -716,9 +714,11 @@ bool parseCommands(
                 ";localRepo=" + localRepository +
                 ";syncType=" + std::to_string(syncType_un.i) +
                 ";syncTime=" + std::to_string(syncTime_seconds);
-            bool ok = DB::addSyncEntry(directoryPath, destRepository, options);
-            std::string responseStr = ok ? "success:" : "error:";
-            responseStr += std::to_string(commands_to_parse_local[i].second) + "-" + std::to_string(commands_to_parse_local[i].first);
+            bool ok = MainLogic_H::addDirectory(directoryPath, destRepository, options);
+            unsigned int code = ok ? RESP_SUCCESS : RESP_ERROR;
+            std::string responseStr = "code:" + std::to_string(code) + ":" +
+                                      std::to_string(commands_to_parse_local[i].second) + "-" +
+                                      std::to_string(commands_to_parse_local[i].first);
             responses_to_send_local.push_back(std::make_pair(responseStr.size(), responseStr));
             break;
         }
