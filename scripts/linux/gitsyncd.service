@@ -1,0 +1,12 @@
+[Unit]
+Description=Git Sync'd Daemon
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/Git-Sync-d --start
+Restart=on-failure
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target

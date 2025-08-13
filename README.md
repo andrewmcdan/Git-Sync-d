@@ -23,3 +23,38 @@ Gonna take some inspiration from the Google Drive desktop app GUI. Taskbar icon 
 Interprocess communication will be handled by the Boost library's boost.interprocess implementation.
 
 Encryption will handled by the Crypto++ Library for storing credentials on disk.
+
+## Building
+
+### Linux
+```bash
+mkdir build && cd build
+cmake ..
+make
+```
+
+### Windows
+Use CMake with Visual Studio or the MSVC toolchain:
+```powershell
+mkdir build
+cd build
+cmake ..
+cmake --build . --config Release
+```
+
+## Installation
+
+### Linux (systemd)
+Copy the provided unit file and enable the service:
+```bash
+sudo cp scripts/linux/gitsyncd.service /etc/systemd/system/gitsyncd.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now gitsyncd
+```
+
+### Windows
+Register the service from an elevated command prompt:
+```batch
+scripts\windows\install_service.bat
+```
+This script uses `sc.exe` to register the service to run `Git-Sync-d --start`.
