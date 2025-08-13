@@ -3,6 +3,9 @@
 #include <array>
 #include <cstdio>
 #include <cstdlib>
+#ifndef _WIN32
+#include <sys/wait.h>
+#endif
 
 #ifdef _WIN32
 #define popen _popen
@@ -64,22 +67,38 @@ std::string getLastCommitMessage(const std::string &repoRoot,
     return result;
 }
 
-static bool runCommand(const std::string &command) {
-    return std::system(command.c_str()) == 0;
+static int runCommand(const std::string &command) {
+    std::array<char, 256> buffer{};
+    FILE *pipe = popen(command.c_str(), "r");
+    if (!pipe) {
+        return -1;
+    }
+    while (fgets(buffer.data(), static_cast<int>(buffer.size()), pipe) != nullptr) {
+        // consume output to avoid blocking
+    }
+    int status = pclose(pipe);
+#ifdef _WIN32
+    return status;
+#else
+    if (WIFEXITED(status)) {
+        return WEXITSTATUS(status);
+    }
+    return -1;
+#endif
 }
 
-bool stageFile(const std::string &repoRoot, const std::string &filePath) {
+int stageFile(const std::string &repoRoot, const std::string &filePath) {
     std::string cmd = "git -C \"" + repoRoot + "\" add \"" + filePath + "\"";
     return runCommand(cmd);
 }
 
-bool commit(const std::string &repoRoot, const std::string &message) {
+int commit(const std::string &repoRoot, const std::string &message) {
     std::string cmd = "git -C \"" + repoRoot + "\" commit -m \"" + message + "\"";
     return runCommand(cmd);
 }
 
-bool push(const std::string &repoRoot) {
-    std::string cmd = "git -C \"" + repoRoot + "\" push";
+int push(const std::string &repoRoot, const std::string &remoteName) {
+    std::string cmd = "git -C \"" + repoRoot + "\" push \"" + remoteName + "\"";
     return runCommand(cmd);
 }
 

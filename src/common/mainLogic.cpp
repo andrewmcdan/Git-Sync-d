@@ -38,10 +38,22 @@ namespace MainLogic_H
                             std::filesystem::copy_file(
                                 src, dstRepo / src.filename(),
                                 std::filesystem::copy_options::overwrite_existing);
-                            GitUtils::stageFile(dstRepo.string(),
-                                                 (dstRepo / src.filename()).string());
-                            GitUtils::commit(dstRepo.string(), msg);
-                            GitUtils::push(dstRepo.string());
+                            std::string target = (dstRepo / src.filename()).string();
+                            if (GitUtils::stageFile(dstRepo.string(), target) != 0) {
+                                GIT_SYNC_D_MESSAGE::Error::error(
+                                    "Failed to stage file",
+                                    GIT_SYNC_D_MESSAGE::_ErrorCode::GENERIC_ERROR);
+                            }
+                            if (GitUtils::commit(dstRepo.string(), msg) != 0) {
+                                GIT_SYNC_D_MESSAGE::Error::error(
+                                    "Failed to commit changes",
+                                    GIT_SYNC_D_MESSAGE::_ErrorCode::GENERIC_ERROR);
+                            }
+                            if (GitUtils::push(dstRepo.string(), "origin") != 0) {
+                                GIT_SYNC_D_MESSAGE::Error::error(
+                                    "Failed to push changes",
+                                    GIT_SYNC_D_MESSAGE::_ErrorCode::GENERIC_ERROR);
+                            }
                         }
                     }
                     else
@@ -63,10 +75,22 @@ namespace MainLogic_H
                             std::filesystem::copy_file(
                                 src, dstRepo / src.filename(),
                                 std::filesystem::copy_options::overwrite_existing);
-                            GitUtils::stageFile(dstRepo.string(),
-                                                 (dstRepo / src.filename()).string());
-                            GitUtils::commit(dstRepo.string(), msg);
-                            GitUtils::push(dstRepo.string());
+                            std::string target = (dstRepo / src.filename()).string();
+                            if (GitUtils::stageFile(dstRepo.string(), target) != 0) {
+                                GIT_SYNC_D_MESSAGE::Error::error(
+                                    "Failed to stage file",
+                                    GIT_SYNC_D_MESSAGE::_ErrorCode::GENERIC_ERROR);
+                            }
+                            if (GitUtils::commit(dstRepo.string(), msg) != 0) {
+                                GIT_SYNC_D_MESSAGE::Error::error(
+                                    "Failed to commit changes",
+                                    GIT_SYNC_D_MESSAGE::_ErrorCode::GENERIC_ERROR);
+                            }
+                            if (GitUtils::push(dstRepo.string(), "origin") != 0) {
+                                GIT_SYNC_D_MESSAGE::Error::error(
+                                    "Failed to push changes",
+                                    GIT_SYNC_D_MESSAGE::_ErrorCode::GENERIC_ERROR);
+                            }
                         }
                     }
                 }
