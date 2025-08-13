@@ -31,6 +31,20 @@ namespace MainLogic_H
     void stop();
     bool IsServiceStopped();
     void setLogEvent(std::function<void(std::string, GIT_SYNC_D_MESSAGE::_ErrorCode)>);
+
+    // Add or remove file/directory synchronisation entries in the database.
+    // These functions also restart any file watchers so that changes take
+    // effect immediately.
+    bool addFile(const std::string &filePath,
+                 const std::string &repoPath,
+                 const std::string &options);
+
+    bool addDirectory(const std::string &dirPath,
+                      const std::string &repoPath,
+                      const std::string &options);
+
+    // Remove a sync entry (file or directory) identified by its path.
+    bool removeSync(const std::string &path);
     
 }
 #endif // MAINLOGIC_H
