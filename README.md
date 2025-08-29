@@ -58,3 +58,8 @@ Register the service from an elevated command prompt:
 scripts\windows\install_service.bat
 ```
 This script uses `sc.exe` to register the service to run `Git-Sync-d --start`.
+
+## 💖 Supporters
+<!-- PATRONS:START -->
+_This list updates automatically._
+<!-- PATRONS:END -->
