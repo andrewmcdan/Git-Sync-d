@@ -61,5 +61,5 @@ This script uses `sc.exe` to register the service to run `Git-Sync-d --start`.
 
 ## 💖 Supporters
 <!-- PATRONS:START -->
-_(No public supporters yet)_
+This to be auto updated.
 <!-- PATRONS:END -->
